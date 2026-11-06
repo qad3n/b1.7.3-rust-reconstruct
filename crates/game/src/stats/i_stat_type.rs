@@ -13,6 +13,7 @@ pub struct StatTypeDistance;
 
 impl IStatType for StatTypeSimple
 {
+    // port decimal_format stands in for java DecimalFormat
     fn format(&self, value: i32) -> String { decimal_format::formatInteger(value) }
 }
 
@@ -27,18 +28,22 @@ impl IStatType for StatTypeTime
         let years: f64 = days / 365.0;
         if years > 0.5
         {
+            // port decimal_format stands in for java DecimalFormat
             return format!("{} y", decimal_format::formatTwoPlaces(years));
         }
         if days > 0.5
         {
+            // port decimal_format stands in for java DecimalFormat
             return format!("{} d", decimal_format::formatTwoPlaces(days));
         }
         if hours > 0.5
         {
+            // port decimal_format stands in for java DecimalFormat
             return format!("{} h", decimal_format::formatTwoPlaces(hours));
         }
         if minutes > 0.5
         {
+            // port decimal_format stands in for java DecimalFormat
             return format!("{} m", decimal_format::formatTwoPlaces(minutes));
         }
         format!("{} s", jvm::floating_decimal::doubleToString(seconds))
@@ -53,10 +58,12 @@ impl IStatType for StatTypeDistance
         let kilometers: f64 = meters / 1000.0;
         if kilometers > 0.5
         {
+            // port decimal_format stands in for java DecimalFormat
             return format!("{} km", decimal_format::formatTwoPlaces(kilometers));
         }
         if meters > 0.5
         {
+            // port decimal_format stands in for java DecimalFormat
             return format!("{} m", decimal_format::formatTwoPlaces(meters));
         }
         format!("{value} cm")

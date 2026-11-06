@@ -98,6 +98,7 @@ fn dispenseItem(world: &Rc<World>, x: i32, y: i32, z: i32, random: &Random)
     {
         n2 = if n == 5 { 1 } else { -1 };
     }
+    // port cast is the java tile entity cast and throws ClassCastException on a wrong class
     let tileEntityDispenser: Rc<TileEntity> =
         tile_entity::cast(world.getBlockTileEntity(x, y, z), "TileEntityDispenser");
     let itemStack: Option<Rc<ItemStack>> = tile_entity_dispenser::getRandomStackFromInventory(&tileEntityDispenser);
@@ -168,6 +169,7 @@ pub const CLASS: BlockClass = BlockClass {
         {
             return true;
         }
+        // port castNullable is the java tile entity cast that lets null through
         let tileEntityDispenser: Option<Rc<TileEntity>> =
             tile_entity::castNullable(world.getBlockTileEntity(x, y, z), "TileEntityDispenser");
         player.displayGUIDispenser(tileEntityDispenser.as_ref());
@@ -193,8 +195,10 @@ pub const CLASS: BlockClass = BlockClass {
     getBlockEntity: |_| tile_entity_dispenser::create(),
     onBlockPlacedBy: block_furnace::onBlockPlacedBy,
     onBlockRemoval: |this, world, x, y, z| {
+        // port cast is the java tile entity cast and throws ClassCastException on a wrong class
         let tileEntityDispenser: Rc<TileEntity> =
             tile_entity::cast(world.getBlockTileEntity(x, y, z), "TileEntityDispenser");
+        // port spillInventory holds the slot spill java writes out in chest dispenser and furnace
         inventory::spillInventory(&this.ext::<DispenserExt>().m_random, world, x, y, z, &tileEntityDispenser);
         (block_container::CLASS.onBlockRemoval)(this, world, x, y, z);
     },

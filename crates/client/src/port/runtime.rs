@@ -1,5 +1,3 @@
-// java.lang.Runtime memory figures with no java heap behind them
-
 pub fn runtimeMemory() -> (i64, i64, i64)
 {
     let field = |path: &str, key: &str| -> i64 {

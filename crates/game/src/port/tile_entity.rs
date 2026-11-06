@@ -1,9 +1,7 @@
-// the (TileEntityX) casts of world.getBlockTileEntity results, a wrong class throws ClassCastException like java
 use crate::tileentity::TileEntity;
 use jvm::throwable::OrNpe;
 use std::rc::Rc;
 
-// a cast whose result the caller dereferences right away, so a null throws there
 pub fn cast(tileEntity: Option<Rc<TileEntity>>, className: &str) -> Rc<TileEntity>
 {
     castNullable(tileEntity, className).orNpe()

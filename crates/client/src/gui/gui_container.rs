@@ -178,6 +178,7 @@ fn drawScreen(this: &Rc<GuiScreen>, mouseX: i32, mouseY: i32, tickDelta: f32)
     {
         let name: Option<String> = slot.getStack().orNpe().getItemName();
         let translated: String = StringTranslate::getInstance().translateNamedKey(name.as_deref().unwrap_or("null"));
+        // port trim strips chars up to space like java String.trim
         let s: String = text::trim(&JString::from(translated.as_str())).to_string();
         if !s.is_empty()
         {

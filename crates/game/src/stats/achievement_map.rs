@@ -25,6 +25,7 @@ fn element<'a>(parts: &[&'a str], index: usize) -> Result<&'a str, Throwable>
 
 fn load(guidMap: &mut HashMap<i32, String>) -> Result<(), Throwable>
 {
+    // port getResourceAsStream reads the assets folder in place of the jar
     let Some(mut stream) = crate::port::getResourceAsStream("/achievement/map.txt")
     else
     {
@@ -45,7 +46,9 @@ fn load(guidMap: &mut HashMap<i32, String>) -> Result<(), Throwable>
     // port readLines splits lines like BufferedReader.readLine
     for line in text::readLines(&text)
     {
+        // port split drops trailing empty parts like java String.split
         let parts: Vec<&str> = text::split(line, ',');
+        // port parseInt runs java Integer.parseInt on rust text
         let id: i32 = parseInt(element(&parts, 0)?)?;
         guidMap.insert(id, element(&parts, 1)?.to_owned());
     }

@@ -257,6 +257,7 @@ impl FontRenderer
 
     fn wrapLine(&self, text: &[u16], width: i32, mut row: impl FnMut(&[u16]))
     {
+        // port splitUnits gives java String.split on utf16 units
         let words: Vec<Vec<u16>> = text::splitUnits(text, b' ' as u16);
         let space: [u16; 1] = [b' ' as u16];
         let mut j: usize = 0;
@@ -296,6 +297,7 @@ impl FontRenderer
 
     fn splitAndDrawUnits(&self, text: &[u16], x: i32, mut y: i32, width: i32, color: i32)
     {
+        // port splitUnits gives java String.split on utf16 units
         let lines: Vec<Vec<u16>> = text::splitUnits(text, b'\n' as u16);
         if lines.len() > 1
         {
@@ -316,6 +318,7 @@ impl FontRenderer
 
     fn heightOf(&self, text: &[u16], width: i32) -> i32
     {
+        // port splitUnits gives java String.split on utf16 units
         let lines: Vec<Vec<u16>> = text::splitUnits(text, b'\n' as u16);
         if lines.len() > 1
         {

@@ -1,4 +1,3 @@
-// the slot spill shared by the chest, dispenser and furnace onBlockRemoval bodies, which java writes out three times
 use crate::entity::{Entity, entity_item};
 use crate::item::ItemStack;
 use crate::tileentity::TileEntity;

@@ -34,8 +34,10 @@ fn keyTyped(this: &Rc<GuiScreen>, chr: u16, key: i32)
     else if key == 28
     {
         let message: JString = chat.m_message.get();
+        // port trim strips chars up to space like java String.trim
         if text::trim(&message).length() > 0
         {
+            // port trim strips chars up to space like java String.trim
             let s1: String = text::trim(&message).to_string();
             if !mc.lineIsCommand(&s1)
             {
@@ -54,6 +56,7 @@ fn keyTyped(this: &Rc<GuiScreen>, chr: u16, key: i32)
         let message: JString = chat.m_message.get();
         if isAllowedCharacter(chr) && message.length() < 100
         {
+            // port appendChar appends one utf16 unit like java string concat with a char
             chat.m_message.set(text::appendChar(&message, chr));
         }
     }
@@ -99,6 +102,7 @@ pub const GUI_CHAT: GuiScreenClass = GuiScreenClass {
         let mut message: JString = chat.m_message.get();
         if message.length() > 0 && message.chars().last() != Some(&(' ' as u16))
         {
+            // port appendChar appends one utf16 unit like java string concat with a char
             message = text::appendChar(&message, ' ' as u16);
         }
         let mut chars: Vec<u16> = message.chars().to_vec();
@@ -159,8 +163,10 @@ pub const GUI_SLEEP_MP: GuiScreenClass = GuiScreenClass {
         {
             let chat: &GuiChat = fields(this);
             let message: JString = chat.m_message.get();
+            // port trim strips chars up to space like java String.trim
             if text::trim(&message).length() > 0
             {
+                // port trim strips chars up to space like java String.trim
                 this.mc().m_thePlayer.get().orNpe().sendChatMessage(&text::trim(&message).to_string());
             }
             chat.m_message.set(JString::new());

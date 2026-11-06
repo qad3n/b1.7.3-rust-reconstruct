@@ -13,6 +13,7 @@ pub const CLASS: BlockClass = BlockClass {
         if neighborBlock > 0 && Block::byId(neighborBlock).orNpe().canProvidePower()
         {
             let bl: bool = world.isBlockGettingPowered(x, y, z);
+            // port cast is the java tile entity cast and throws ClassCastException on a wrong class
             let tileEntityNote: Rc<TileEntity> = tile_entity::cast(world.getBlockTileEntity(x, y, z), "TileEntityNote");
             let note: &tile_entity_note::NoteExt = tileEntityNote.ext();
             if note.m_previousRedstoneState.get() != bl
@@ -30,6 +31,7 @@ pub const CLASS: BlockClass = BlockClass {
         {
             return true;
         }
+        // port cast is the java tile entity cast and throws ClassCastException on a wrong class
         let tileEntityNote: Rc<TileEntity> = tile_entity::cast(world.getBlockTileEntity(x, y, z), "TileEntityNote");
         tile_entity_note::changePitch(&tileEntityNote);
         tile_entity_note::triggerNote(&tileEntityNote, world, x, y, z);
@@ -40,6 +42,7 @@ pub const CLASS: BlockClass = BlockClass {
         {
             return;
         }
+        // port cast is the java tile entity cast and throws ClassCastException on a wrong class
         let tileEntityNote: Rc<TileEntity> = tile_entity::cast(world.getBlockTileEntity(x, y, z), "TileEntityNote");
         tile_entity_note::triggerNote(&tileEntityNote, world, x, y, z);
     },

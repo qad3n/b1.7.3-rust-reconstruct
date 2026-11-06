@@ -208,6 +208,7 @@ impl TileEntity
 
     pub fn castNullable(tileEntity: Option<Rc<TileEntity>>, className: &str) -> Option<Rc<TileEntity>>
     {
+        // forwards to port castNullable until item_sign calls port directly
         crate::port::tile_entity::castNullable(tileEntity, className)
     }
 

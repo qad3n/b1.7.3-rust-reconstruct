@@ -1,4 +1,3 @@
-// code of the port with no vanilla counterpart
 pub mod awt;
 pub mod awt_frame;
 pub mod calendar;
@@ -12,7 +11,6 @@ pub mod world_release;
 use crate::render::Tessellator;
 use std::any::Any;
 
-// game's Entity vtable cannot name the client tessellator, so renderParticle carries it as Any
 pub fn tessellator(target: &dyn Any) -> &Tessellator
 {
     target.downcast_ref().expect("renderParticle is only called with the tessellator")

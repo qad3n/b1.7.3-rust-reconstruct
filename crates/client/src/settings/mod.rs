@@ -6,6 +6,7 @@ mod mouse_helper;
 mod movement_input;
 mod movement_input_from_options;
 
+// re-export of port Component kept for callers outside settings
 pub use crate::port::awt::Component;
 pub use enum_options::EnumOptions;
 pub use game_settings::GameSettings;

@@ -68,6 +68,7 @@ const CLASS: GuiScreenClass = GuiScreenClass {
     keyTyped: |_, _, _| {},
     initGui: |this| {
         let ext: &MainMenuExt = fields(this);
+        // port dateFields stands in for java Calendar fields in local time
         let date: DateFields = dateFields(jvm::system::currentTimeMillis());
         if let Some((_, _, splash)) =
             HOLIDAY_SPLASHES.iter().find(|(month, day, _)| date.m_month == *month && date.m_day == *day)

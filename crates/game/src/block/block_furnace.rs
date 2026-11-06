@@ -165,8 +165,10 @@ fn onBlockRemoval(this: &Rc<Block>, world: &Rc<World>, x: i32, y: i32, z: i32)
 {
     if !KEEP_FURNACE_INVENTORY.with(Cell::get)
     {
+        // port cast is the java tile entity cast and throws ClassCastException on a wrong class
         let tileEntityFurnace: Rc<TileEntity> =
             tile_entity::cast(world.getBlockTileEntity(x, y, z), "TileEntityFurnace");
+        // port spillInventory holds the slot spill java writes out in chest dispenser and furnace
         inventory::spillInventory(&furnace(this).m_furnaceRand, world, x, y, z, &tileEntityFurnace);
     }
     (block_container::CLASS.onBlockRemoval)(this, world, x, y, z);
@@ -188,6 +190,7 @@ pub const CLASS: BlockClass = BlockClass {
         {
             return true;
         }
+        // port castNullable is the java tile entity cast that lets null through
         let tileEntityFurnace: Option<Rc<TileEntity>> =
             tile_entity::castNullable(world.getBlockTileEntity(x, y, z), "TileEntityFurnace");
         player.displayGUIFurnace(tileEntityFurnace.as_ref());

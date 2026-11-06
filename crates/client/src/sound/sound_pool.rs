@@ -54,6 +54,7 @@ impl SoundPool
             }
         }
         path = path.replace('/', ".");
+        // port fileUrl is java File.toURI().toURL()
         let soundPoolEntry: Rc<SoundPoolEntry> = Rc::new(SoundPoolEntry::new(path2, file_url::fileUrl(file)));
         self.m_nameToSoundPoolEntriesMapping.borrow_mut().entry(path).or_default().push(Rc::clone(&soundPoolEntry));
         self.m_allSoundPoolEntries.borrow_mut().push(Rc::clone(&soundPoolEntry));

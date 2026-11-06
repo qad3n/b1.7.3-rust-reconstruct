@@ -1,4 +1,3 @@
-// java.awt pieces the game classes call, over the lwjgl window
 pub trait Component
 {
     fn getWidth(&self) -> i32;

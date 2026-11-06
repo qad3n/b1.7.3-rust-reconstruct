@@ -95,6 +95,7 @@ impl GuiTextField
         if isAllowedCharacter(chr)
             && (text.length() < self.m_maxStringLength.get() || self.m_maxStringLength.get() == 0)
         {
+            // port appendChar appends one utf16 unit like java string concat with a char
             self.m_text.set(text::appendChar(&text, chr));
         }
     }

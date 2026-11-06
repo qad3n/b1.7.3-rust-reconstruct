@@ -31,9 +31,11 @@ fn seedField(this: &GuiScreen) -> Rc<GuiTextField> { fields(this).m_textboxSeed.
 
 fn getSaveDirectoryName(this: &GuiScreen)
 {
+    // port trim strips chars up to space like java String.trim
     let mut folderName: JString = text::trim(&worldName(this).getText());
     for c in ChatAllowedCharacters::ALLOWED_CHARACTERS_ARRAY
     {
+        // port replaceChar swaps utf16 units like java String.replace
         folderName = text::replaceChar(&folderName, c as u16, b'_' as u16);
     }
     if math_helper::stringNullOrLengthZero(Some(&folderName))

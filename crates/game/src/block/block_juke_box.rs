@@ -38,6 +38,7 @@ pub fn newRecordPlayer() -> Rc<TileEntity>
 
 fn recordPlayerAt(world: &Rc<World>, x: i32, y: i32, z: i32) -> Rc<TileEntity>
 {
+    // port cast is the java tile entity cast and throws ClassCastException on a wrong class
     tile_entity::cast(world.getBlockTileEntity(x, y, z), "BlockJukeBox$TileEntityRecordPlayer")
 }
 

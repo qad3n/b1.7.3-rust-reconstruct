@@ -19,6 +19,7 @@ fn fields(this: &GuiScreen) -> &MultiplayerExt { this.ext::<MultiplayerExt>() }
 
 fn serverField(this: &GuiScreen) -> Rc<GuiTextField> { fields(this).m_serverField.get().orNpe() }
 
+// port parseInt and trimStr give java Integer.parseInt and String.trim on rust text
 fn parseIntWithDefault(s: &str, defaultValue: i32) -> i32 { parseInt(text::trimStr(s)).unwrap_or(defaultValue) }
 
 fn splitAddress(string: &str) -> Vec<String>
@@ -35,6 +36,7 @@ fn splitAddress(string: &str) -> Vec<String>
         && let Some(n) = string.find(']').filter(|n| *n > 0)
     {
         let string2: &str = &string[1..n];
+        // port trim strips chars up to space like java String.trim
         let mut string3: &str = text::trimStr(&string[n + 1..]);
         if string3.starts_with(':') && !string3.is_empty()
         {
@@ -86,6 +88,7 @@ const CLASS: GuiScreenClass = GuiScreenClass {
             1 => mc.displayGuiScreen(Some(Rc::clone(&fields(this).m_parentScreen))),
             0 =>
             {
+                // port trim strips chars up to space like java String.trim
                 let text: String = text::trim(&serverField(this).getText()).to_string();
                 let string: &str = &text;
                 let settings: Rc<GameSettings> = mc.m_gameSettings.get().orNpe();

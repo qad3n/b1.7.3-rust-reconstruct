@@ -240,6 +240,7 @@ impl GuiIngame
         fontrenderer.drawStringWithShadow(&mc.getRenderEntityDebugInfo(), 2, 22, 16777215);
         fontrenderer.drawStringWithShadow(&mc.getWorldDebugInfo(), 2, 32, 16777215);
         fontrenderer.drawStringWithShadow(&mc.getChunkSourceDebugInfo(), 2, 42, 16777215);
+        // port runtimeMemory stands in for java Runtime memory figures
         let (k3, j5, j6): (i64, i64, i64) = runtime::runtimeMemory();
         let k2: i64 = j5 - j6;
         let mut s: String =
@@ -275,6 +276,7 @@ impl GuiIngame
         let mut k5: i32 = 16777215;
         if self.m_overlayMessageTinted.get()
         {
+            // port hsbToRgb is java Color.HSBtoRGB
             k5 = awt::hsbToRgb(f1 / 50.0, 0.7, 0.6) & 16777215;
         }
         let recordPlaying: String = self.m_recordPlaying.get();

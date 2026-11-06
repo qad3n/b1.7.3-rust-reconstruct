@@ -1,4 +1,3 @@
-// code of the port with no vanilla counterpart
 pub mod decimal_format;
 pub mod file;
 mod glue;

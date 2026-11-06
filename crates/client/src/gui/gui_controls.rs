@@ -20,7 +20,8 @@ fn getControlsListX(this: &GuiScreen) -> i32 { this.m_width.get() / 2 - 155 }
 
 fn addKeyButton(this: &GuiScreen, options: &GameSettings, i: i32, x: i32)
 {
-    let button: Rc<GuiButton> = GuiButton::smallWithSize(i, x + i % 2 * 160, this.m_height.get() / 6 + 24 * (i >> 1), 70, 20, "");
+    let button: Rc<GuiButton> =
+        GuiButton::smallWithSize(i, x + i % 2 * 160, this.m_height.get() / 6 + 24 * (i >> 1), 70, 20, "");
     button.m_displayString.set(options.getOptionDisplayString(i));
     this.m_controlList.add(button);
 }

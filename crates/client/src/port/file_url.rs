@@ -1,4 +1,3 @@
-// File.toURI().toURL() of an absolute file, illegal URI characters quoted
 use std::path::{Path, PathBuf};
 
 fn isUriChar(c: char) -> bool { c.is_ascii_alphanumeric() || "-_.!~*'()/:@&=+$,;".contains(c) || !c.is_ascii() }

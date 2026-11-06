@@ -184,13 +184,16 @@ fn isThereANeighborChest(this: &Block, world: &Rc<World>, x: i32, y: i32, z: i32
 
 fn onBlockRemoval(this: &Rc<Block>, world: &Rc<World>, x: i32, y: i32, z: i32)
 {
+    // port cast is the java tile entity cast and throws ClassCastException on a wrong class
     let tileEntityChest: Rc<TileEntity> = tile_entity::cast(world.getBlockTileEntity(x, y, z), "TileEntityChest");
+    // port spillInventory holds the slot spill java writes out in chest dispenser and furnace
     inventory::spillInventory(&this.ext::<ChestExt>().m_random, world, x, y, z, &tileEntityChest);
     (block_container::CLASS.onBlockRemoval)(this, world, x, y, z);
 }
 
 fn chestAt(world: &Rc<World>, x: i32, y: i32, z: i32) -> Option<Rc<dyn IInventory>>
 {
+    // port castNullable is the java tile entity cast that lets null through
     tile_entity::castNullable(world.getBlockTileEntity(x, y, z), "TileEntityChest")
         .map(|chest| chest as Rc<dyn IInventory>)
 }

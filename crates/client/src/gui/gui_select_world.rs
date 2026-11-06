@@ -134,6 +134,7 @@ fn drawSlot(slot: &Rc<GuiSlot>, index: i32, x: i32, y: i32, _height: i32, _tesse
     }
     let l: i64 = saveFormatComparator.getSize();
     let megabytes: f32 = (l / 1024 * 100 / 1024) as f32 / 100.0;
+    // port formatDefault stands in for the java SimpleDateFormat default pattern
     let string2: String = format!(
         "{} ({}, {} MB)",
         saveFormatComparator.getFileName(),

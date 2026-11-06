@@ -60,6 +60,7 @@ const CLASS: GuiScreenClass = GuiScreenClass {
             0 =>
             {
                 let iSaveFormat: Rc<dyn ISaveFormat> = this.mc().m_saveLoader.get().orNpe();
+                // port trim strips chars up to space like java String.trim
                 iSaveFormat.rename(&ext.m_worldName, &text::trim(&searchField(this).getText()).to_string());
                 this.mc().displayGuiScreen(Some(Rc::clone(&ext.m_parent)));
             }
@@ -70,6 +71,7 @@ const CLASS: GuiScreenClass = GuiScreenClass {
     keyTyped: |this, chr, key| {
         let field: Rc<GuiTextField> = searchField(this);
         field.textboxKeyTyped(chr, key);
+        // port trim strips chars up to space like java String.trim
         this.m_controlList.get(0).m_enabled.set(text::trim(&field.getText()).length() > 0);
         if chr == b'\r' as u16
         {

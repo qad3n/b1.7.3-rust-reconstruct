@@ -79,6 +79,7 @@ const CLASS: GuiScreenClass = GuiScreenClass {
         let connection: Option<Connection> = ext.m_connection.lock().unwrap_or_else(PoisonError::into_inner).take();
         if let Some(connection) = connection
         {
+            // builds the handler on the main thread where java builds it on the connect thread
             finishConnecting(ext, connection);
         }
         if let Some(handler) = ext.m_clientHandler.get()
@@ -165,6 +166,7 @@ impl GuiConnecting
         };
         let connection: Arc<Mutex<Option<Connection>>> = Arc::clone(&ext.m_connection);
         let host: String = address.to_string();
+        // the thread only opens the socket since Rc game state cannot cross threads
         let started: std::io::Result<JoinHandle<()>> = jvm::thread::start(jvm::thread::nextName(), move || {
             let result: Connection = NetClientHandler::connect(&host, port);
             *connection.lock().unwrap_or_else(PoisonError::into_inner) = Some(result);

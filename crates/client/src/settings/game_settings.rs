@@ -73,6 +73,7 @@ fn arrayIndex(index: i32, length: usize) -> usize
 
 fn parseInt(string: &str) -> i32
 {
+    // port parseInt runs java Integer.parseInt on rust text
     game::port::parseInt(string).unwrap_or_else(|exception| jvm::throwable::rethrow(exception))
 }
 
@@ -341,6 +342,7 @@ impl GameSettings
 
     fn loadOption(&self, line: &str)
     {
+        // port split drops trailing empty parts like java String.split
         let astring: Vec<&str> = text::split(line, ':');
         let value = |index: usize| -> &str {
             match astring.get(index)

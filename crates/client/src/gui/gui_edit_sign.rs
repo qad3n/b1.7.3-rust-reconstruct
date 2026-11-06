@@ -90,6 +90,7 @@ pub const GUI_EDIT_SIGN: GuiScreenClass = GuiScreenClass {
         let text: JString = signLine(sign, line);
         if isAllowedCharacter(chr) && text.length() < 15
         {
+            // port appendChar appends one utf16 unit like java string concat with a char
             setSignLine(sign, line, text::appendChar(&text, chr));
         }
     },
