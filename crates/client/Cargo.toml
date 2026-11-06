@@ -19,7 +19,7 @@ common = { path = "../common" }
 game = { path = "../game" }
 jvm = { path = "../jvm" }
 lwjgl = { path = "../lwjgl" }
-paulscode = { path = "../paulscode" }
+paulscode = { package = "pudscode", path = "../../vendor/pudscode" }
 serde_json = "1"
 sha1_smol = "1"
 thiserror = "2"

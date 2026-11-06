@@ -10,6 +10,7 @@ fn main() -> ExitCode
 {
     jvm::throwable::installHook();
     game::port::setSide(game::port::Side::Client);
+    client::port::sound::install();
     let spawned: std::io::Result<std::thread::JoinHandle<ExitCode>> =
         std::thread::Builder::new().name("main".to_owned()).stack_size(GAME_STACK_BYTES).spawn(run);
     let handle: std::thread::JoinHandle<ExitCode> = match spawned

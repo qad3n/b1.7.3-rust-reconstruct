@@ -5,6 +5,7 @@ pub mod calendar;
 pub mod file_url;
 pub mod network;
 pub mod runtime;
+pub mod sound;
 pub mod system;
 pub mod world_release;
 
