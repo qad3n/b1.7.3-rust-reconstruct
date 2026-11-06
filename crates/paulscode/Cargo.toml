@@ -1,0 +1,13 @@
+[package]
+name = "paulscode"
+version = "0.1.0"
+edition.workspace = true
+publish.workspace = true
+
+[dependencies]
+jorbis = { path = "../jorbis" }
+jvm = { path = "../jvm" }
+lwjgl = { path = "../lwjgl" }
+
+[lints]
+workspace = true
