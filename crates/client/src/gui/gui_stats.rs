@@ -76,6 +76,8 @@ fn renderStatIcon(this: &GuiScreen, x: i32, y: i32, icon: i32)
     GL11::glDisable(32826);
 }
 
+const HEADER_OFFSETS: [i32; 3] = [115, 165, 215];
+
 #[derive(Clone, Copy)]
 enum StatColumn
 {
@@ -101,6 +103,7 @@ fn columnStat(column: StatColumn, entry: &Rc<StatBase>) -> Option<Rc<StatBase>>
 
 struct StatsListKind
 {
+    m_class: &'static GuiSlotClass,
     m_source: fn() -> Vec<Rc<StatBase>>,
     m_filter: [StatColumn; 2],
     m_sortColumns: [StatColumn; 3],
@@ -110,6 +113,7 @@ struct StatsListKind
 }
 
 const BLOCK_STATS: StatsListKind = StatsListKind {
+    m_class: &SLOT_STATS_BLOCK,
     m_source: || StatList::mined().toVec(),
     m_filter: [StatColumn::Used, StatColumn::Crafted],
     m_sortColumns: [StatColumn::Crafted, StatColumn::Used, StatColumn::Mined],
@@ -119,6 +123,7 @@ const BLOCK_STATS: StatsListKind = StatsListKind {
 };
 
 const ITEM_STATS: StatsListKind = StatsListKind {
+    m_class: &SLOT_STATS_ITEM,
     m_source: || StatList::used().toVec(),
     m_filter: [StatColumn::Broken, StatColumn::Crafted],
     m_sortColumns: [StatColumn::Broken, StatColumn::Crafted, StatColumn::Used],
@@ -232,6 +237,7 @@ fn renderItemName(slot: &GuiSlot, stat: &Rc<StatBase>, x: i32, z: i32)
     let item: Rc<Item> = Item::byIdOrNpe(stat.getItem());
     let name: Option<String> = item.getItemName();
     let s: String = StringTranslate::getInstance().translateNamedKey(name.as_deref().unwrap_or("null"));
+    // port trim strips chars up to space like java String.trim
     drawTooltip(&slotScreen(slot), text::trimStr(&s), x, z);
 }
 
@@ -272,6 +278,7 @@ fn renderDecorations(slot: &Rc<GuiSlot>, mouseX: i32, mouseY: i32)
     };
     let header: Option<String> = slot.getColumnHeader(column);
     let s: String = StringTranslate::getInstance().translateKey(header.as_deref().unwrap_or("null"));
+    // port trim strips chars up to space like java String.trim
     drawTooltip(&this, text::trimStr(&s), mouseX, mouseY);
 }
 
@@ -283,8 +290,7 @@ fn renderHeader(slot: &Rc<GuiSlot>, x: i32, y: i32, _tesselator: &Rc<Tessellator
     {
         ext.m_clickedIconId.set(-1);
     }
-    let offsets: [i32; 3] = [115, 165, 215];
-    for (column, offset) in offsets.iter().enumerate()
+    for (column, offset) in HEADER_OFFSETS.iter().enumerate()
     {
         let v: i32 = if ext.m_clickedIconId.get() == column as i32
         {
@@ -314,7 +320,14 @@ fn renderHeader(slot: &Rc<GuiSlot>, x: i32, y: i32, _tesselator: &Rc<Tessellator
         };
         renderSlot(&this, x + short1, y + 1, b0, 0);
     }
-    for (column, offset) in offsets.iter().enumerate()
+}
+
+fn renderKindHeader(slot: &Rc<GuiSlot>, x: i32, y: i32, tesselator: &Rc<Tessellator>)
+{
+    (SLOT_STATS.renderHeader)(slot, x, y, tesselator);
+    let ext: &SlotStatsExt = slotFields(slot);
+    let this: Rc<GuiScreen> = slotScreen(slot);
+    for (column, offset) in HEADER_OFFSETS.iter().enumerate()
     {
         let u: i32 = ext.m_kind.m_headerIcons[column];
         if ext.m_clickedIconId.get() == column as i32
@@ -328,20 +341,25 @@ fn renderHeader(slot: &Rc<GuiSlot>, x: i32, y: i32, _tesselator: &Rc<Tessellator
     }
 }
 
+fn getKindColumnHeader(slot: &Rc<GuiSlot>, column: i32) -> Option<String>
+{
+    let headers: &[&str; 3] = &slotFields(slot).m_kind.m_headers;
+    Some(headers[(column as usize).min(2)].to_string())
+}
+
 fn drawStatsSlot(slot: &Rc<GuiSlot>, index: i32, x: i32, y: i32, _height: i32, _tesselator: &Rc<Tessellator>)
 {
     let ext: &SlotStatsExt = slotFields(slot);
     let statcrafting: Rc<StatBase> = Rc::clone(&ext.m_entries.borrow()[index as usize]);
     renderStatIcon(&slotScreen(slot), x + 40, y, statcrafting.getItem());
-    let offsets: [i32; 3] = [115, 165, 215];
-    for (column, offset) in ext.m_kind.m_columns.iter().zip(offsets)
+    for (column, offset) in ext.m_kind.m_columns.iter().zip(HEADER_OFFSETS)
     {
         renderColumnStat(slot, columnStat(*column, &statcrafting).as_ref(), x + offset, y, index % 2 == 0);
     }
 }
 
 const SLOT_STATS: GuiSlotClass = GuiSlotClass {
-    m_name: "GuiSlotStats",
+    m_name: "GuiStats$GuiSlotStats",
     m_parent: Some(&GUI_SLOT),
     m_interfaces: &[],
     elementClicked: |_, _, _| {},
@@ -365,13 +383,28 @@ const SLOT_STATS: GuiSlotClass = GuiSlotClass {
         }
     },
     getSize: |slot| slotFields(slot).m_entries.borrow().len() as i32,
-    getColumnHeader: |slot, column| {
-        let headers: &[&str; 3] = &slotFields(slot).m_kind.m_headers;
-        Some(headers[(column as usize).min(2)].to_string())
-    },
     renderDecorations,
-    drawSlot: drawStatsSlot,
     ..GUI_SLOT
+};
+
+const SLOT_STATS_BLOCK: GuiSlotClass = GuiSlotClass {
+    m_name: "GuiSlotStatsBlock",
+    m_parent: Some(&SLOT_STATS),
+    m_interfaces: &[],
+    renderHeader: renderKindHeader,
+    drawSlot: drawStatsSlot,
+    getColumnHeader: getKindColumnHeader,
+    ..SLOT_STATS
+};
+
+const SLOT_STATS_ITEM: GuiSlotClass = GuiSlotClass {
+    m_name: "GuiSlotStatsItem",
+    m_parent: Some(&SLOT_STATS),
+    m_interfaces: &[],
+    renderHeader: renderKindHeader,
+    drawSlot: drawStatsSlot,
+    getColumnHeader: getKindColumnHeader,
+    ..SLOT_STATS
 };
 
 fn newSlotStats(this: &GuiScreen, kind: &'static StatsListKind) -> Rc<GuiSlot>
@@ -399,7 +432,7 @@ fn newSlotStats(this: &GuiScreen, kind: &'static StatsListKind) -> Rc<GuiSlot>
         m_statSortOrder: Cell::new(0),
     };
     let slot: Rc<GuiSlot> = GuiSlot::construct(
-        &SLOT_STATS,
+        kind.m_class,
         Box::new(ext),
         this.mc(),
         this.m_width.get(),

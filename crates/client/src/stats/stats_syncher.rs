@@ -1,5 +1,6 @@
 use crate::client::Session;
 use crate::stats::stat_file_writer::{StatFileWriter, StatMap};
+use game::port::text;
 use jvm::string::JString;
 use jvm::throwable::{EXCEPTION, Throwable};
 use std::cell::{Cell, RefCell};
@@ -52,9 +53,10 @@ fn pickStatsFile(files: &StatFiles) -> Option<&PathBuf>
 
 fn readStatsText(file: &Path) -> Option<String>
 {
-    match std::fs::read_to_string(file)
+    match std::fs::read(file)
     {
-        Ok(text) => Some(text.lines().collect::<String>()),
+        // port helpers decode in the platform charset and split lines like FileReader with readLine
+        Ok(bytes) => Some(text::readLines(&text::decodePlatform(&bytes)).concat()),
         Err(error) =>
         {
             jvm::io::fromStd(&error).printStackTrace();
@@ -84,7 +86,9 @@ fn loadStats(files: &StatFiles) -> Option<StatMap>
 
 fn saveText(text: &str, files: &StatFiles) -> Result<(), Throwable>
 {
-    std::fs::write(&files.m_tempFile, text).map_err(|error| jvm::io::fromStd(&error))?;
+    let mut file: std::fs::File = std::fs::File::create(&files.m_tempFile).map_err(|error| jvm::io::fromStd(&error))?;
+    let _ = std::io::Write::write_all(&mut file, &JString::from(text).getBytes());
+    drop(file);
     if files.m_oldFile.exists()
     {
         let _deleted: bool = std::fs::remove_file(&files.m_oldFile).is_ok();

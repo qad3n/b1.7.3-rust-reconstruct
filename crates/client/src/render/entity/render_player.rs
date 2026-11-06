@@ -115,7 +115,7 @@ fn passSpecialRender(this: &Rc<Render>, entity: &Rc<Entity>, dx: f64, dy: f64, d
     let f1: f32 = LABEL_SCALE * f;
     let f2: f32 = entity.getDistanceToEntity(&camera.orNpe());
     let f3: f32 = if entity.isSneaking() { 32.0 } else { 64.0 };
-    if f2 >= f3
+    if !(f2 < f3)
     {
         return;
     }
@@ -221,7 +221,6 @@ fn renderCloak(this: &Render, entity: &Rc<Entity>, tickDelta: f32)
 
 fn renderEquippedItems(this: &Rc<Render>, entity: &Rc<Entity>, tickDelta: f32)
 {
-    let itemRenderer = this.renderManager().m_itemRenderer.get().orNpe();
     if let Some(itemstack) = entity_player::inventory(entity).armorItemInSlot(HELMET_SLOT)
         && itemstack.getItem().m_shiftedIndex < BLOCK_ITEM_LIMIT
     {
@@ -234,7 +233,7 @@ fn renderEquippedItems(this: &Rc<Render>, entity: &Rc<Entity>, tickDelta: f32)
             GL11::glRotatef(180.0, 0.0, 1.0, 0.0);
             GL11::glScalef(f, -f, f);
         }
-        itemRenderer.renderItem(entity, &itemstack);
+        this.renderManager().m_itemRenderer.get().orNpe().renderItem(entity, &itemstack);
         GL11::glPopMatrix();
     }
     let skinUrl: Option<String> = entity.m_skinUrl.get().map(|url| JString::display(Some(&url)));
@@ -257,7 +256,7 @@ fn renderEquippedItems(this: &Rc<Render>, entity: &Rc<Entity>, tickDelta: f32)
             itemstack1 = ItemStack::withItem(&Item::stick());
         }
         transformHeldItem(&itemstack1, true);
-        itemRenderer.renderItem(entity, &itemstack1);
+        this.renderManager().m_itemRenderer.get().orNpe().renderItem(entity, &itemstack1);
         GL11::glPopMatrix();
     }
 }

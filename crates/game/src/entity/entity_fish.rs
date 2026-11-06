@@ -246,16 +246,14 @@ fn onUpdate(this: &Rc<Entity>)
     this.setPosition(this.posX(), this.posY(), this.posZ());
 }
 
-fn pullTowardAngler(this: &Entity, angler: &Entity, target: &Entity)
+fn pullTowardAngler(this: &Entity, angler: &Entity) -> (f64, f64, f64)
 {
     let d: f64 = angler.posX() - this.posX();
     let d2: f64 = angler.posY() - this.posY();
     let d3: f64 = angler.posZ() - this.posZ();
     let d4: f64 = sqrt_double(d * d + d2 * d2 + d3 * d3) as f64;
     let d5: f64 = 0.1;
-    target.m_motionX.set(target.m_motionX.get() + d * d5);
-    target.m_motionY.set(target.m_motionY.get() + d2 * d5 + sqrt_double(d4) as f64 * 0.08);
-    target.m_motionZ.set(target.m_motionZ.get() + d3 * d5);
+    (d * d5, d2 * d5 + sqrt_double(d4) as f64 * 0.08, d3 * d5)
 }
 
 pub fn catchFish(this: &Rc<Entity>) -> i32
@@ -265,7 +263,10 @@ pub fn catchFish(this: &Rc<Entity>) -> i32
     let mut n: i32 = 0;
     if let Some(bobber) = fish.m_bobber.get()
     {
-        pullTowardAngler(this, &angler, &bobber);
+        let (x, y, z): (f64, f64, f64) = pullTowardAngler(this, &angler);
+        bobber.m_motionX.set(bobber.m_motionX.get() + x);
+        bobber.m_motionY.set(bobber.m_motionY.get() + y);
+        bobber.m_motionZ.set(bobber.m_motionZ.get() + z);
         n = 3;
     }
     else if fish.m_ticksCatchable.get() > 0
@@ -273,7 +274,10 @@ pub fn catchFish(this: &Rc<Entity>) -> i32
         let world: Rc<World> = this.world();
         let entityItem: Rc<Entity> =
             entity_item::create(&world, this.posX(), this.posY(), this.posZ(), ItemStack::withItem(&Item::fishRaw()));
-        pullTowardAngler(this, &angler, &entityItem);
+        let (x, y, z): (f64, f64, f64) = pullTowardAngler(this, &angler);
+        entityItem.m_motionX.set(x);
+        entityItem.m_motionY.set(y);
+        entityItem.m_motionZ.set(z);
         world.entityJoinedWorld(&entityItem);
         angler.addStat(StatList::fishCaughtStat().as_ref(), 1);
         n = 1;

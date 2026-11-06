@@ -12,7 +12,7 @@ thread_local! {
 
 fn attackEntity(this: &Rc<Entity>, target: &Rc<Entity>, distance: f32)
 {
-    if distance >= 10.0
+    if !(distance < 10.0)
     {
         return;
     }

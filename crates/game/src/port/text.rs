@@ -1,4 +1,4 @@
-// jdk 6 String behavior the ported game code needs on rust text
+use jvm::locale::Charset;
 use jvm::string::JString;
 
 pub fn readLines(text: &str) -> Vec<&str>
@@ -81,3 +81,25 @@ pub fn replaceChar(text: &JString, from: u16, to: u16) -> JString
 }
 
 pub fn trimStr(text: &str) -> &str { text.trim_matches(|c: char| c <= ' ') }
+
+pub fn decodePlatform(bytes: &[u8]) -> String
+{
+    match jvm::locale::platformCharset()
+    {
+        Charset::Utf8 => String::from_utf8_lossy(bytes).into_owned(),
+        Charset::Latin1 => bytes.iter().map(|&byte| byte as char).collect(),
+        Charset::Ascii => bytes
+            .iter()
+            .map(|&byte| {
+                if byte < 0x80
+                {
+                    byte as char
+                }
+                else
+                {
+                    '\u{FFFD}'
+                }
+            })
+            .collect(),
+    }
+}

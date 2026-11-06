@@ -1,5 +1,5 @@
 use crate::client::Minecraft;
-use crate::render::texture_compass_fx::{netherSpin, readItemIcon, readTile, swing};
+use crate::render::texture_compass_fx::{netherSpin, readTile, swing};
 use crate::render::{TILE_PIXELS, TextureFX, TextureFXFields};
 use game::item::Item;
 use game::world::World;
@@ -27,8 +27,10 @@ impl TextureWatchFX
         fx.m_tileImage.set(1);
         let mut icon: Vec<i32> = vec![0; TILE_PIXELS];
         let mut dial: Vec<i32> = vec![0; TILE_PIXELS];
-        readItemIcon(fx.m_iconIndex.get(), &mut icon);
-        if let Err(error) = readTile("/misc/dial.png", 0, 0, &mut dial)
+        let n: i32 = fx.m_iconIndex.get() % 16 * 16;
+        let n2: i32 = fx.m_iconIndex.get() / 16 * 16;
+        if let Err(error) =
+            readTile("/gui/items.png", n, n2, &mut icon).and_then(|()| readTile("/misc/dial.png", 0, 0, &mut dial))
         {
             error.printStackTrace();
         }

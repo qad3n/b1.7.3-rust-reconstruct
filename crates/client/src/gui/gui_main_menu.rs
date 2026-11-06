@@ -42,7 +42,15 @@ fn readSplashes() -> Option<Vec<String>>
         bytes.push(value as u8);
     }
     let text: String = String::from_utf8_lossy(&bytes).into_owned();
-    Some(text::readLines(&text).into_iter().map(text::trimStr).filter(|line| !line.is_empty()).map(str::to_string).collect())
+    // port readLines and trimStr give java BufferedReader.readLine and String.trim
+    Some(
+        text::readLines(&text)
+            .into_iter()
+            .map(text::trimStr)
+            .filter(|line| !line.is_empty())
+            .map(str::to_string)
+            .collect(),
+    )
 }
 
 const HOLIDAY_SPLASHES: [(i32, i32, &str); 4] = [

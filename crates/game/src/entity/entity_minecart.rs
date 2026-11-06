@@ -486,7 +486,7 @@ fn onUpdate(this: &Rc<Entity>)
     {
         d25 += 360.0;
     }
-    if !(-170.0..170.0).contains(&d25)
+    if d25 < -170.0 || d25 >= 170.0
     {
         this.m_rotationYaw.set(this.m_rotationYaw.get() + 180.0);
         cart.m_flipped.set(!cart.m_flipped.get());
@@ -623,7 +623,7 @@ fn applyEntityCollision(this: &Rc<Entity>, entity: &Rc<Entity>)
     let mut d0: f64 = entity.posX() - this.posX();
     let mut d1: f64 = entity.posZ() - this.posZ();
     let mut d2: f64 = d0 * d0 + d1 * d1;
-    if d2 < 1.0E-4f32 as f64
+    if !(d2 >= 1.0E-4f32 as f64)
     {
         return;
     }

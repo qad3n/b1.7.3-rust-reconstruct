@@ -4,7 +4,8 @@ use crate::render::{TexturePackBase, TexturePackFields};
 use jvm::field::Field;
 use jvm::image::{BufferedImage, ImageIO};
 use jvm::io::{ByteArrayInputStream, InputStream, IoResult};
-use jvm::throwable::OrNpe;
+use jvm::throwable::{OrNpe, Throwable};
+use jvm::zip::ZIP;
 use std::cell::{Cell, RefCell};
 use std::fs::File;
 use std::io::Read;
@@ -25,7 +26,11 @@ pub struct TexturePackCustom
     m_texturePackFile: PathBuf,
 }
 
-fn openZip(path: &Path) -> Option<ZipFile> { File::open(path).ok().and_then(|file| ZipArchive::new(file).ok()) }
+fn openZip(path: &Path) -> Result<ZipFile, Throwable>
+{
+    let file: File = File::open(path).map_err(|error| jvm::io::fromStd(&error))?;
+    ZipArchive::new(file).map_err(|_| Throwable::new(&ZIP, Some("error in opening zip file".to_owned())))
+}
 
 fn readEntry(zip: &mut ZipFile, name: &str) -> Option<Vec<u8>>
 {
@@ -83,10 +88,14 @@ impl TexturePackBase for TexturePackCustom
 
     fn load(&self, _minecraft: &Rc<Minecraft>) -> IoResult<()>
     {
-        let Some(mut zipFile) = openZip(&self.m_texturePackFile)
-        else
+        let mut zipFile: ZipFile = match openZip(&self.m_texturePackFile)
         {
-            return Ok(());
+            Ok(zipFile) => zipFile,
+            Err(exception) =>
+            {
+                exception.printStackTrace();
+                return Ok(());
+            }
         };
         if let Some(text) = readEntry(&mut zipFile, "pack.txt")
         {
@@ -119,7 +128,13 @@ impl TexturePackBase for TexturePackCustom
         bindThumbnail(minecraft, self.m_texturePackThumbnail.get().as_ref(), &self.m_texturePackName);
     }
 
-    fn open(&self) { *self.m_texturePackZipFile.borrow_mut() = openZip(&self.m_texturePackFile); }
+    fn open(&self)
+    {
+        if let Ok(zipFile) = openZip(&self.m_texturePackFile)
+        {
+            *self.m_texturePackZipFile.borrow_mut() = Some(zipFile);
+        }
+    }
 
     fn closeTexturePackFile(&self) { *self.m_texturePackZipFile.borrow_mut() = None; }
 

@@ -3,6 +3,7 @@ use crate::settings::{EnumOptions, KeyBinding};
 use game::locale::{StatCollector, StringTranslate};
 use game::port::text;
 use jvm::field::Field;
+use jvm::string::JString;
 use jvm::throwable::{OrNpe, Throwable};
 use lwjgl::input::Keyboard;
 use std::cell::Cell;
@@ -380,8 +381,10 @@ impl GameSettings
     fn readOptions(&self, optionsFile: &Path) -> Result<(), Throwable>
     {
         let bytes: Vec<u8> = std::fs::read(optionsFile).map_err(|error| jvm::io::fileNotFound(optionsFile, &error))?;
-        let text: String = String::from_utf8_lossy(&bytes).into_owned();
-        for s in text.lines()
+        // port decodePlatform decodes in the platform charset like a java Reader
+        let text: String = text::decodePlatform(&bytes);
+        // port readLines splits lines like BufferedReader.readLine
+        for s in text::readLines(&text)
         {
             if jvm::throwable::catchThrowable(&jvm::throwable::EXCEPTION, || self.loadOption(s)).is_err()
             {
@@ -438,7 +441,7 @@ impl GameSettings
         {
             Ok(mut file) =>
             {
-                let _ = std::io::Write::write_all(&mut file, self.optionsText().as_bytes());
+                let _ = std::io::Write::write_all(&mut file, &JString::from(self.optionsText().as_str()).getBytes());
             }
             Err(error) =>
             {

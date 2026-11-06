@@ -30,6 +30,15 @@ pub fn renameTo(from: &Path, to: &Path) -> bool { std::fs::rename(from, to).is_o
 
 pub fn length(path: &Path) -> i64 { std::fs::metadata(path).map_or(0, |metadata| metadata.len() as i64) }
 
+pub fn lastModified(path: &Path) -> i64
+{
+    std::fs::metadata(path)
+        .and_then(|metadata| metadata.modified())
+        .ok()
+        .and_then(|time| time.duration_since(std::time::UNIX_EPOCH).ok())
+        .map_or(0, |duration| duration.as_secs() as i64 * 1000)
+}
+
 pub fn getName(path: &Path) -> String
 {
     path.file_name().map_or_else(String::new, |name| name.to_string_lossy().into_owned())

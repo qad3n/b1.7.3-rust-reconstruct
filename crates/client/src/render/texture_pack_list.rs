@@ -1,6 +1,7 @@
 use crate::client::Minecraft;
 use crate::render::{TexturePackBase, TexturePackCustom, TexturePackDefault};
 use crate::settings::GameSettings;
+use game::port::file;
 use jvm::field::Field;
 use jvm::string::JString;
 use jvm::throwable::OrNpe;
@@ -20,29 +21,15 @@ pub struct TexturePackList
     m_currentTexturePack: Field<String>,
 }
 
-fn fileName(path: &Path) -> String
-{
-    path.file_name().map_or_else(String::new, |name| name.to_string_lossy().into_owned())
-}
-
-fn lastModified(path: &Path) -> i64
-{
-    std::fs::metadata(path)
-        .and_then(|metadata| metadata.modified())
-        .ok()
-        .and_then(|time| time.duration_since(std::time::UNIX_EPOCH).ok())
-        .map_or(0, |duration| duration.as_millis() as i64)
-}
-
 impl TexturePackList
 {
     pub fn new(minecraft: &Rc<Minecraft>, gameDir: &Path) -> Rc<TexturePackList>
     {
         let defaultPack: Rc<dyn TexturePackBase> = Rc::new(TexturePackDefault::new());
         let texturePackDir: PathBuf = gameDir.join("texturepacks");
-        if !texturePackDir.exists()
+        if !file::exists(&texturePackDir)
         {
-            let _ = std::fs::create_dir_all(&texturePackDir);
+            file::mkdirs(&texturePackDir);
         }
         let settings: Rc<GameSettings> = minecraft.m_gameSettings.get().orNpe();
         let list: Rc<TexturePackList> = Rc::new(TexturePackList {
@@ -84,20 +71,17 @@ impl TexturePackList
         let mut arraylist: Vec<Rc<dyn TexturePackBase>> = Vec::new();
         self.m_selectedTexturePack.set(None);
         arraylist.push(Rc::clone(&self.m_defaultTexturePack));
-        if self.m_texturePackDir.is_dir()
+        if file::exists(&self.m_texturePackDir) && file::isDirectory(&self.m_texturePackDir)
         {
-            let files: Vec<PathBuf> = std::fs::read_dir(&self.m_texturePackDir)
-                .map(|entries| entries.filter_map(Result::ok).map(|entry| entry.path()).collect())
-                .unwrap_or_default();
-            for file1 in files
+            let afile: Vec<PathBuf> = file::listFiles(&self.m_texturePackDir).orNpe();
+            for file1 in afile
             {
-                let name: String = fileName(&file1);
+                let name: String = file::getName(&file1);
                 if !file1.is_file() || !JString::from(name.as_str()).toLowerCase().to_string().ends_with(".zip")
                 {
                     continue;
                 }
-                let length: i64 = std::fs::metadata(&file1).map_or(0, |metadata| metadata.len() as i64);
-                let s: String = format!("{name}:{length}:{}", lastModified(&file1));
+                let s: String = format!("{name}:{}:{}", file::length(&file1), file::lastModified(&file1));
                 if !self.m_availablePacksByKey.borrow().contains_key(&s)
                 {
                     let texturepackcustom: Rc<dyn TexturePackBase> = Rc::new(TexturePackCustom::new(&file1));

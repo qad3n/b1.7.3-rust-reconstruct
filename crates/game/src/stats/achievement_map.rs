@@ -40,7 +40,9 @@ fn load(guidMap: &mut HashMap<i32, String>) -> Result<(), Throwable>
         }
         bytes.push(value as u8);
     }
-    let text: String = String::from_utf8_lossy(&bytes).into_owned();
+    // port decodePlatform decodes in the platform charset like a java Reader
+    let text: String = text::decodePlatform(&bytes);
+    // port readLines splits lines like BufferedReader.readLine
     for line in text::readLines(&text)
     {
         let parts: Vec<&str> = text::split(line, ',');

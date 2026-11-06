@@ -35,7 +35,7 @@ fn onUpdate(this: &Rc<Entity>)
     let material: Rc<Material> = world.getBlockMaterial(x, y, z);
     if material.getIsLiquid() || material.isSolid()
     {
-        let d0: f64 = (y + 1) as f64 - block_fluid::getPercentAir(world.getBlockMetadata(x, y, z)) as f64;
+        let d0: f64 = ((y + 1) as f32 - block_fluid::getPercentAir(world.getBlockMetadata(x, y, z))) as f64;
         if this.posY() < d0
         {
             this.setEntityDead();
