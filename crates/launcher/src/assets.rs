@@ -10,10 +10,10 @@ const VERSION_ID: &str = "b1.7.3";
 const CLIENT_JAR_SHA1: &str = "43db9b498cb67058d2e12d394e6507722e71bb45";
 const CLIENT_JAR_SIZE: u64 = 1465375;
 const RESOURCES_URL: &str = "https://resources.download.minecraft.net";
-const RESOURCES_DIR: &str = "resources";
 const MCASSET_URL: &str = "https://mcasset.cloud/b1.7.3/assets";
 
 const CLIENT_STAMP: &str = ".client-jar.sha1";
+const SOUNDS_STAMP: &str = ".sounds-installed";
 
 const SOUND_PREFIXES: &[&str] = &["sound/", "newsound/", "music/", "newmusic/", "streaming/"];
 
@@ -64,26 +64,28 @@ fn clientInstalled(root: &Path) -> bool
     std::fs::read_to_string(root.join(CLIENT_STAMP)).is_ok_and(|stamp| stamp.trim() == CLIENT_JAR_SHA1)
 }
 
-fn soundsPresent(root: &Path) -> bool { root.join(RESOURCES_DIR).is_dir() }
+fn soundsInstalled(root: &Path, resources: &Path) -> bool
+{
+    std::fs::read_to_string(root.join(SOUNDS_STAMP)).is_ok_and(|stamp| Path::new(&stamp) == resources)
+}
 
-pub fn install(root: &Path, clientJar: Option<PathBuf>) -> Result<(), FetchError>
+pub fn install(root: &Path, resources: &Path, clientJar: Option<PathBuf>) -> Result<(), FetchError>
 {
     if !clientInstalled(root)
     {
         fetchClient(root, clientJar)?;
     }
-    if !soundsPresent(root)
+    if !soundsInstalled(root, resources)
     {
         match localSounds()
         {
-            Some(folder) => copySounds(root, &folder)?,
-            None => fetchSounds(root)?,
+            Some(folder) => copySounds(resources, &folder)?,
+            None => fetchSounds(resources)?,
         }
+        write(&root.join(SOUNDS_STAMP), resources.to_string_lossy().as_bytes())?;
     }
     Ok(())
 }
-
-fn soundStaging(root: &Path) -> PathBuf { root.join(format!("{RESOURCES_DIR}.partial")) }
 
 fn localSounds() -> Option<PathBuf>
 {
@@ -91,24 +93,18 @@ fn localSounds() -> Option<PathBuf>
     folder.is_dir().then_some(folder)
 }
 
-fn copySounds(root: &Path, source: &Path) -> Result<(), FetchError>
+fn copySounds(resources: &Path, source: &Path) -> Result<(), FetchError>
 {
-    eprintln!("beta173_launcher: copying sounds from {}", source.display());
-    let staging: PathBuf = soundStaging(root);
-    if staging.exists()
-    {
-        std::fs::remove_dir_all(&staging).map_err(|source| FetchError::Io { path: staging.clone(), source })?;
-    }
+    eprintln!("beta173_launcher: copying sounds from {} into {}", source.display(), resources.display());
     for prefix in SOUND_PREFIXES
     {
         let folder: PathBuf = source.join(prefix.trim_end_matches('/'));
         if folder.is_dir()
         {
-            copyTree(&folder, &staging.join(prefix.trim_end_matches('/')))?;
+            copyTree(&folder, &resources.join(prefix.trim_end_matches('/')))?;
         }
     }
-    let target: PathBuf = root.join(RESOURCES_DIR);
-    std::fs::rename(&staging, &target).map_err(|source| FetchError::Io { path: target, source })
+    Ok(())
 }
 
 fn copyTree(from: &Path, to: &Path) -> Result<(), FetchError>
@@ -192,7 +188,7 @@ fn downloadClientJar() -> Result<Vec<u8>, FetchError>
     download(&client.m_url)
 }
 
-fn fetchSounds(root: &Path) -> Result<(), FetchError>
+fn fetchSounds(resources: &Path) -> Result<(), FetchError>
 {
     let version: Value = versionJson()?;
     let indexEntry: Remote = remote(&version, "/assetIndex", "url")?;
@@ -205,8 +201,7 @@ fn fetchSounds(root: &Path) -> Result<(), FetchError>
         .ok_or_else(|| FetchError::Metadata { url: indexEntry.m_url.clone(), message: "no objects map".to_owned() })?;
     let wanted: Vec<(&String, &Value)> =
         objects.iter().filter(|(name, _)| SOUND_PREFIXES.iter().any(|prefix| name.starts_with(prefix))).collect();
-    eprintln!("beta173_launcher: downloading {} sound files", wanted.len());
-    let staging: PathBuf = soundStaging(root);
+    eprintln!("beta173_launcher: downloading {} sound files into {}", wanted.len(), resources.display());
     for (name, object) in wanted
     {
         let hash: String = stringField(&indexEntry.m_url, object, "hash")?;
@@ -215,7 +210,7 @@ fn fetchSounds(root: &Path) -> Result<(), FetchError>
             url: indexEntry.m_url.clone(),
             message: format!("short hash for {name}"),
         })?;
-        let destination: PathBuf = staging.join(name);
+        let destination: PathBuf = resources.join(name);
         if std::fs::read(&destination).is_ok_and(|bytes| verify(name, &bytes, &hash, size).is_ok())
         {
             continue;
@@ -225,8 +220,7 @@ fn fetchSounds(root: &Path) -> Result<(), FetchError>
         verify(name, &bytes, &hash, size)?;
         write(&destination, &bytes)?;
     }
-    let target: PathBuf = root.join(RESOURCES_DIR);
-    std::fs::rename(&staging, &target).map_err(|source| FetchError::Io { path: target, source })
+    Ok(())
 }
 
 fn versionJson() -> Result<Value, FetchError>

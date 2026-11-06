@@ -8,4 +8,4 @@ Game assets load from an assets folder at runtime. Nothing in it is committed ex
 2. The official Mojang download (version manifest, b1.7.3 version json, client jar). Every sha1 is checked.
 3. By hand: copy the files of the mcasset.cloud b1.7.3 `assets` folder in here.
 
-Sounds were never inside the b1.7.3 jar. They come from the `pre-1.6` asset index into `resources/`, or from `B173_SOUNDS_DIR`, a local folder holding `sound/`, `newsound/`, `music/`, `newmusic/`, `streaming/`, which is copied instead of downloading.
+Sounds were never inside the b1.7.3 jar. Like Mojang's launcher (`map_to_resources` in the `pre-1.6` asset index), `beta173_launcher` puts them in the game directory's `resources/` folder (`~/.minecraft/resources`, or `B173_MINECRAFT_DIR`), where the vanilla resource thread installs them at startup. They come from the `pre-1.6` asset index, or from `B173_SOUNDS_DIR`, a local folder holding `sound/`, `newsound/`, `music/`, `newmusic/`, `streaming/`, which is copied instead of downloading.

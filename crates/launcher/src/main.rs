@@ -7,6 +7,7 @@ use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
 const ASSETS_ENV: &str = "B173_ASSETS";
+const GAME_DIR_ENV: &str = "B173_MINECRAFT_DIR";
 const GAME_BINARY: &str = "beta173";
 const DATA_FOLDER: &str = "beta173";
 const NAME_FILE: &str = "name.txt";
@@ -44,7 +45,7 @@ fn run() -> Result<ExitCode>
     let dataDir: PathBuf = dataDir()?;
     let name: String = askName(&dataDir)?;
     let root: PathBuf = assetRoot(&dataDir);
-    assets::install(&root, options.m_clientJar)?;
+    assets::install(&root, &gameDir()?.join("resources"), options.m_clientJar)?;
     let game: PathBuf = match options.m_game
     {
         Some(path) => path,
@@ -154,6 +155,26 @@ fn dataDir() -> Result<PathBuf>
         },
     };
     Ok(base.join(DATA_FOLDER))
+}
+
+fn gameDir() -> Result<PathBuf>
+{
+    if let Some(dir) = std::env::var_os(GAME_DIR_ENV)
+    {
+        return Ok(PathBuf::from(dir));
+    }
+    let home: PathBuf = std::env::var_os("HOME")
+        .or_else(|| std::env::var_os("USERPROFILE"))
+        .map(PathBuf::from)
+        .context("no home folder is set")?;
+    Ok(match std::env::consts::OS
+    {
+        "linux" | "solaris" => home.join(".minecraft"),
+        "windows" => std::env::var_os("APPDATA")
+            .map_or_else(|| home.join(".minecraft"), |appData| PathBuf::from(appData).join(".minecraft")),
+        "macos" => home.join("Library/Application Support/minecraft"),
+        _ => home.join("minecraft"),
+    })
 }
 
 fn assetRoot(dataDir: &Path) -> PathBuf

@@ -14,4 +14,4 @@ The game starts from `beta173` next to the launcher, or `--game <path>`.
 
 ## Data folder
 
-`$XDG_DATA_HOME/beta173` (default `~/.local/share/beta173`) on Linux, `~/Library/Application Support/beta173` on macOS, `%APPDATA%\beta173` on Windows. It holds `name.txt` and `assets/`, unless `B173_ASSETS` names another assets folder. See `assets/README.md` at the workspace root for the asset sources.
+`$XDG_DATA_HOME/beta173` (default `~/.local/share/beta173`) on Linux, `~/Library/Application Support/beta173` on macOS, `%APPDATA%\beta173` on Windows. It holds `name.txt` and `assets/`, unless `B173_ASSETS` names another assets folder. Sounds go to the game directory's `resources/` folder instead, as the vanilla game expects. See `assets/README.md` at the workspace root for the asset sources.
