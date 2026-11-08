@@ -1,10 +1,15 @@
 use crate::client::Minecraft;
 use crate::gui::Gui;
 use crate::render::RenderEngine;
+use jvm::random::Random;
 use jvm::throwable::OrNpe;
 use lwjgl::opengl::GL11;
 use std::cell::RefCell;
 use std::rc::Rc;
+
+thread_local! {
+    pub static RANDOM: Random = Random::new();
+}
 
 #[derive(Default)]
 pub struct Particle

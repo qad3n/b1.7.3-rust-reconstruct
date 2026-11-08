@@ -2,11 +2,16 @@ use crate::network::net_handler::NetHandler;
 use crate::network::packet::{Packet, PacketBase, PacketInput, PacketOutput};
 use jvm::io::IoResult;
 
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub struct Packet8UpdateHealth
 {
     m_base: PacketBase,
     pub m_healthMP: i32,
+}
+
+impl Packet8UpdateHealth
+{
+    pub fn new(health: i32) -> Self { Self { m_healthMP: health, ..Self::default() } }
 }
 
 impl Packet for Packet8UpdateHealth

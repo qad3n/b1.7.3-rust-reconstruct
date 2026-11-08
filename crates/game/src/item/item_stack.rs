@@ -63,6 +63,7 @@ impl ItemStack
 
     pub fn getItem(&self) -> Rc<Item> { Item::byIdOrNpe(self.m_itemID.get()) }
 
+    // java getItem may return null and this variant keeps it for callers that test the result
     pub fn getItemNullable(&self) -> Option<Rc<Item>> { Item::byId(self.m_itemID.get()) }
 
     pub fn getIconIndex(self: &Rc<Self>) -> i32 { self.getItem().getIconIndex(self) }

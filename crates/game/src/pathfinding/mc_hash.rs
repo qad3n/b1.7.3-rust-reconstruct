@@ -38,6 +38,10 @@ impl<V: Clone> MCHash<V>
     }
 
     pub fn clearMap(&mut self) { self.m_slots.clear(); }
+
+    pub fn containsItem(&self, key: i32) -> bool { self.lookupEntry(key).is_some() }
+
+    fn lookupEntry(&self, key: i32) -> Option<V> { self.lookup(key) }
 }
 
 impl<V: Clone> Default for MCHash<V>

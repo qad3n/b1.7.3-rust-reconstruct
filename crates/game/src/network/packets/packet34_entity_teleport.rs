@@ -4,7 +4,7 @@ use crate::network::net_handler::NetHandler;
 use crate::network::packet::{self, Packet, PacketBase, PacketInput, PacketOutput};
 use jvm::io::IoResult;
 
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub struct Packet34EntityTeleport
 {
     m_base: PacketBase,
@@ -18,6 +18,19 @@ pub struct Packet34EntityTeleport
 
 impl Packet34EntityTeleport
 {
+    pub fn withPosition(id: i32, x: i32, y: i32, z: i32, yaw: i8, pitch: i8) -> Self
+    {
+        Self {
+            m_entityId: id,
+            m_xPosition: x,
+            m_yPosition: y,
+            m_zPosition: z,
+            m_yaw: yaw,
+            m_pitch: pitch,
+            ..Self::default()
+        }
+    }
+
     pub fn new(entity: &Entity) -> Self
     {
         Self {

@@ -2,7 +2,6 @@ use crate::world::world_client::WorldClientExt;
 use game::world::World;
 use std::rc::Rc;
 
-// Minecraft.changeWorld drops the previous world here, the multiplayer world also lets go of its entity tables
 pub fn releaseDiscardedWorld(previous: Option<Rc<World>>, current: Option<Rc<World>>)
 {
     let Some(previous) = previous

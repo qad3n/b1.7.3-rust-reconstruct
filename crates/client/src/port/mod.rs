@@ -3,6 +3,7 @@ pub mod awt_frame;
 pub mod calendar;
 pub mod file_url;
 pub mod network;
+pub mod render;
 pub mod runtime;
 pub mod sound;
 pub mod system;

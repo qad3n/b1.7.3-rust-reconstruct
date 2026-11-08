@@ -38,6 +38,7 @@ crate::vtable! {
         fn setBlockMetadata(localX: i32, y: i32, localZ: i32, metadata: i32);
         fn setChunkBlockTileEntity(localX: i32, y: i32, localZ: i32, blockEntity: &Rc<TileEntity>);
         fn setChunkData(data: &[i8], minX: i32, minY: i32, minZ: i32, maxX: i32, maxY: i32, maxZ: i32, size: i32) -> i32;
+        fn getChunkData(data: &mut [i8], minX: i32, minY: i32, minZ: i32, maxX: i32, maxY: i32, maxZ: i32, size: i32) -> i32;
         fn setChunkModified();
         fn setLightValue(kind: EnumSkyBlock, localX: i32, y: i32, localZ: i32, light: i32);
     }
@@ -79,6 +80,7 @@ pub const CHUNK: ChunkClass = ChunkClass {
     },
     setChunkBlockTileEntity: entities::setChunkBlockTileEntity,
     setChunkData: light::setChunkData,
+    getChunkData: light::getChunkData,
     setChunkModified: |this| this.m_isModified.set(true),
     setLightValue: light::setLightValue,
 };

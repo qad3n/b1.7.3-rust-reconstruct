@@ -10,7 +10,7 @@ pub struct ChatAllowedCharacters;
 fn getAllowedCharacters() -> String
 {
     let mut s: String = String::new();
-    let Some(mut stream) = crate::assets::getResourceAsStream("/font.txt")
+    let Some(mut stream) = crate::port::getResourceAsStream("/font.txt")
     else
     {
         return s;

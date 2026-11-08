@@ -148,6 +148,7 @@ pub fn addVelocity(this: &Rc<Entity>, dx: f64, dy: f64, dz: f64)
 
 pub fn applyEntityCollision(this: &Rc<Entity>, entity: &Rc<Entity>)
 {
+    // java compares references here and either side may be null
     if sameObject(entity.m_riddenByEntity.get().as_ref(), Some(this))
         || sameObject(entity.m_ridingEntity.get().as_ref(), Some(this))
     {

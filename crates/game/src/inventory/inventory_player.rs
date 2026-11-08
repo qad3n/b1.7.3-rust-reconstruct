@@ -29,6 +29,8 @@ fn put(slots: &RefCell<Vec<Option<Rc<ItemStack>>>>, index: i32, value: Option<Rc
 
 impl InventoryPlayer
 {
+    pub fn getHotbarSize() -> i32 { 9 }
+
     pub fn new(player: &Weak<Entity>) -> InventoryPlayer
     {
         InventoryPlayer {
@@ -372,7 +374,7 @@ impl InventoryPlayer
     pub fn setItemStack(&self, item: Option<Rc<ItemStack>>)
     {
         self.m_itemStack.set(item.clone());
-        entity_player::onItemStackChanged(&self.player(), item);
+        self.player().onItemStackChanged(item);
     }
 
     pub fn getItemStack(&self) -> Option<Rc<ItemStack>> { self.m_itemStack.get() }

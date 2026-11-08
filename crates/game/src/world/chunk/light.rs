@@ -362,3 +362,60 @@ pub fn setChunkData(
     }
     size
 }
+
+pub fn getChunkData(
+    this: &Rc<Chunk>,
+    data: &mut [i8],
+    minX: i32,
+    minY: i32,
+    minZ: i32,
+    maxX: i32,
+    maxY: i32,
+    maxZ: i32,
+    size: i32,
+) -> i32
+{
+    let mut size: i32 = size;
+    let i: i32 = maxX - minX;
+    let j: i32 = maxY - minY;
+    let k: i32 = maxZ - minZ;
+    if i * j * k == this.m_blocks.with(|blocks| blocks.len() as i32)
+    {
+        this.m_blocks.with(|blocks| data[size as usize..size as usize + blocks.len()].copy_from_slice(blocks));
+        size += this.m_blocks.with(|blocks| blocks.len() as i32);
+        for source in [this.data(), this.blocklight(), this.skylight()]
+        {
+            source.m_data.with(|nibbles| data[size as usize..size as usize + nibbles.len()].copy_from_slice(nibbles));
+            size += source.m_data.with(|nibbles| nibbles.len() as i32);
+        }
+        return size;
+    }
+    for l in minX..maxX
+    {
+        for i1 in minZ..maxZ
+        {
+            let j1: i32 = l << 11 | i1 << 7 | minY;
+            let k1: i32 = maxY - minY;
+            this.m_blocks.with(|blocks| {
+                data[size as usize..(size + k1) as usize].copy_from_slice(&blocks[j1 as usize..(j1 + k1) as usize])
+            });
+            size += k1;
+        }
+    }
+    for source in [this.data(), this.blocklight(), this.skylight()]
+    {
+        for l1 in minX..maxX
+        {
+            for k2 in minZ..maxZ
+            {
+                let j3: i32 = (l1 << 11 | k2 << 7 | minY) >> 1;
+                let i4: i32 = (maxY - minY) / 2;
+                source.m_data.with(|nibbles| {
+                    data[size as usize..(size + i4) as usize].copy_from_slice(&nibbles[j3 as usize..(j3 + i4) as usize])
+                });
+                size += i4;
+            }
+        }
+    }
+    size
+}

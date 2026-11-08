@@ -123,7 +123,7 @@ pub const PLAYER_CONTROLLER: PlayerControllerClass = PlayerControllerClass {
     adjustPlayer: |_, _| {},
     attackEntity: |_, player, target| entity_player::attackTargetEntityWithCurrentItem(player, target),
     clickBlock: |this, x, y, z, face| {
-        this.theWorld().onBlockHit(&this.thePlayer(), x, y, z, face);
+        this.theWorld().onBlockHit(Some(&this.thePlayer()), x, y, z, face);
         this.sendBlockRemoved(x, y, z, face);
     },
     clickSlot,

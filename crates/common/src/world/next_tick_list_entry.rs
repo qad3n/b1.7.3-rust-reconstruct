@@ -84,7 +84,6 @@ impl JavaObject for NextTickListEntry
     fn javaHash(&self) -> i32 { self.hashCode() }
 }
 
-// TreeSet ordering comes from compareTo, which never ties two distinct entries
 impl Ord for NextTickListEntry
 {
     fn cmp(&self, other: &Self) -> Ordering { self.compareTo(other).cmp(&0) }

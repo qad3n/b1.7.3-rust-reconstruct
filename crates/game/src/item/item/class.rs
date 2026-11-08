@@ -1,6 +1,7 @@
 use crate::block::Block;
 use crate::entity::Entity;
 use crate::item::{Item, ItemStack};
+use crate::network::packet::Packet;
 use crate::world::World;
 use std::rc::Rc;
 
@@ -16,6 +17,8 @@ crate::vtable! {
         fn getStrVsBlock(stack: &Rc<ItemStack>, block: &Rc<Block>) -> f32;
         fn hitEntity(stack: &Rc<ItemStack>, target: &Rc<Entity>, attacker: &Rc<Entity>) -> bool;
         fn isFull3D() -> bool;
+        fn isNetworkSynced() -> bool;
+        fn getUpdatePacket(stack: &Rc<ItemStack>, world: &Rc<World>, player: &Rc<Entity>) -> Option<Box<dyn Packet>>;
         fn onBlockDestroyed(stack: &Rc<ItemStack>, block: i32, x: i32, y: i32, z: i32, entity: &Rc<Entity>) -> bool;
         fn onCreated(stack: &Rc<ItemStack>, world: &Rc<World>, player: &Rc<Entity>);
         fn onItemRightClick(stack: &Rc<ItemStack>, world: &Rc<World>, player: &Rc<Entity>) -> Option<Rc<ItemStack>>;
@@ -40,6 +43,8 @@ pub const ITEM: ItemClass = ItemClass {
     getStrVsBlock: |_, _, _| 1.0,
     hitEntity: |_, _, _, _| false,
     isFull3D: |this| this.m_bFull3D.get(),
+    isNetworkSynced: |_| false,
+    getUpdatePacket: |_, _, _, _| crate::port::abstractMethod("getUpdatePacket"),
     onBlockDestroyed: |_, _, _, _, _, _, _| false,
     onCreated: |_, _, _, _| {},
     onItemRightClick: |_, stack, _, _| Some(Rc::clone(stack)),

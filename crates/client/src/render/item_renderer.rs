@@ -1,5 +1,7 @@
 use crate::client::Minecraft;
-use crate::render::{MapItemRenderer, RenderBlocks, RenderEngine, RenderHelper, Tessellator};
+use crate::port::render::castToRenderPlayer;
+use crate::render::entity::{Render, render_player};
+use crate::render::{MapItemRenderer, RenderBlocks, RenderEngine, RenderHelper, RenderManager, Tessellator};
 use game::block::{Block, Material};
 use game::entity::{Entity, entity_living, entity_player};
 use game::item::{Item, ItemStack};
@@ -283,7 +285,10 @@ impl ItemRenderer
                 GL11::glScalef(1.0, 1.0, 1.0);
                 GL11::glTranslatef(5.6, 0.0, 0.0);
                 GL11::glScalef(1.0, 1.0, 1.0);
-                crate::render::entity::render_player::drawFirstPersonHandOf(&player);
+                // the java (RenderPlayer) cast runs in port because Render has no subclass types to downcast
+                let renderplayer: Rc<Render> =
+                    castToRenderPlayer(RenderManager::instance().getEntityRenderObject(&player));
+                render_player::drawFirstPersonHand(&renderplayer);
                 GL11::glPopMatrix();
             }
         }
@@ -313,7 +318,9 @@ impl ItemRenderer
             GL11::glRotatef(59.0, 0.0, 0.0, 1.0);
             GL11::glRotatef((-65 * k) as f32, 0.0, 1.0, 0.0);
             GL11::glScalef(1.0, 1.0, 1.0);
-            crate::render::entity::render_player::drawFirstPersonHandOf(player);
+            // the java (RenderPlayer) cast runs in port because Render has no subclass types to downcast
+            let renderplayer: Rc<Render> = castToRenderPlayer(RenderManager::instance().getEntityRenderObject(player));
+            render_player::drawFirstPersonHand(&renderplayer);
             GL11::glPopMatrix();
         }
         let f15: f32 = entity_living::getSwingProgress(player, tickDelta);

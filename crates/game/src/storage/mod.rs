@@ -1,5 +1,6 @@
 mod chunk_file;
 mod chunk_loader;
+mod i_player_file_data;
 mod i_save_format;
 mod mc_region_chunk_loader;
 mod region_file;
@@ -13,6 +14,7 @@ mod save_old_dir;
 
 pub use chunk_file::ChunkFile;
 pub use chunk_loader::ChunkLoader;
+pub use i_player_file_data::IPlayerFileData;
 pub use i_save_format::ISaveFormat;
 pub use mc_region_chunk_loader::McRegionChunkLoader;
 pub use region_file::RegionFile;

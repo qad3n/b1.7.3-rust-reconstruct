@@ -75,7 +75,7 @@ fn blockActivated(this: &Rc<Block>, world: &Rc<World>, mut x: i32, y: i32, mut z
             return true;
         }
     }
-    let enumStatus: EnumStatus = entity_player::sleepInBedAt(player, x, y, z);
+    let enumStatus: EnumStatus = player.sleepInBedAt(x, y, z);
     if enumStatus == EnumStatus::Ok
     {
         setBedOccupied(world, x, y, z, true);

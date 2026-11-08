@@ -1,11 +1,12 @@
 use crate::network::net_handler::NetHandler;
 use crate::network::packet::{Packet, PacketBase, PacketInput, PacketOutput};
+// string length of a field java dereferences without a null check comes from port
 use crate::port::network;
 use jvm::io::IoResult;
 use jvm::string::JString;
 use jvm::throwable::OrNpe;
 
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub struct Packet100OpenWindow
 {
     m_base: PacketBase,
@@ -13,6 +14,14 @@ pub struct Packet100OpenWindow
     pub m_inventoryType: i32,
     pub m_windowTitle: Option<JString>,
     pub m_slotsCount: i32,
+}
+
+impl Packet100OpenWindow
+{
+    pub fn new(n: i32, n2: i32, string: Option<JString>, n3: i32) -> Self
+    {
+        Self { m_windowId: n, m_inventoryType: n2, m_windowTitle: string, m_slotsCount: n3, ..Self::default() }
+    }
 }
 
 impl Packet for Packet100OpenWindow

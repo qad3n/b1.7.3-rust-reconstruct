@@ -1,4 +1,5 @@
 use crate::block::{Block, Material};
+use crate::math::{AxisAlignedBB, math_helper};
 use crate::tileentity::TileEntity;
 use crate::world::{Chunk, World};
 use jvm::throwable::OrNpe;
@@ -228,6 +229,108 @@ impl World
         }
     }
 
+    pub fn findTopSolidBlockServer(&self, x: i32, z: i32) -> i32
+    {
+        let chunk: Rc<Chunk> = self.getChunkFromBlockCoords(x, z);
+        let mut i: i32 = 127;
+        let x: i32 = x & 15;
+        let z: i32 = z & 15;
+        while i > 0
+        {
+            let j: i32 = chunk.getBlockID(x, i, z);
+            if j != 0 && Block::byId(j).orNpe().m_blockMaterial.getIsSolid()
+            {
+                return i + 1;
+            }
+            i -= 1;
+        }
+        -1
+    }
+
+    pub fn containsNonAir(&self, bounds: &AxisAlignedBB) -> bool
+    {
+        let mut i: i32 = math_helper::floor_double(bounds.m_minX.get());
+        let j: i32 = math_helper::floor_double(bounds.m_maxX.get() + 1.0);
+        let mut k: i32 = math_helper::floor_double(bounds.m_minY.get());
+        let l: i32 = math_helper::floor_double(bounds.m_maxY.get() + 1.0);
+        let mut i1: i32 = math_helper::floor_double(bounds.m_minZ.get());
+        let j1: i32 = math_helper::floor_double(bounds.m_maxZ.get() + 1.0);
+        if bounds.m_minX.get() < 0.0
+        {
+            i -= 1;
+        }
+        if bounds.m_minY.get() < 0.0
+        {
+            k -= 1;
+        }
+        if bounds.m_minZ.get() < 0.0
+        {
+            i1 -= 1;
+        }
+        for k1 in i..j
+        {
+            for l1 in k..l
+            {
+                for i2 in i1..j1
+                {
+                    if Block::byId(self.getBlockId(k1, l1, i2)).is_some()
+                    {
+                        return true;
+                    }
+                }
+            }
+        }
+        false
+    }
+
+    pub fn getChunkData(&self, minX: i32, minY: i32, minZ: i32, widthX: i32, height: i32, widthZ: i32) -> Vec<i8>
+    {
+        let mut abyte: Vec<i8> = vec![0; (widthX * height * widthZ * 5 / 2) as usize];
+        let i: i32 = minX >> 4;
+        let j: i32 = minZ >> 4;
+        let k: i32 = minX + widthX - 1 >> 4;
+        let l: i32 = minZ + widthZ - 1 >> 4;
+        let mut i1: i32 = 0;
+        let mut j1: i32 = minY;
+        let mut k1: i32 = minY + height;
+        if j1 < 0
+        {
+            j1 = 0;
+        }
+        if k1 > 128
+        {
+            k1 = 128;
+        }
+        for l1 in i..=k
+        {
+            let mut i2: i32 = minX - l1 * 16;
+            let mut j2: i32 = minX + widthX - l1 * 16;
+            if i2 < 0
+            {
+                i2 = 0;
+            }
+            if j2 > 16
+            {
+                j2 = 16;
+            }
+            for k2 in j..=l
+            {
+                let mut l2: i32 = minZ - k2 * 16;
+                let mut i3: i32 = minZ + widthZ - k2 * 16;
+                if l2 < 0
+                {
+                    l2 = 0;
+                }
+                if i3 > 16
+                {
+                    i3 = 16;
+                }
+                i1 = self.getChunkFromChunkCoords(l1, k2).getChunkData(&mut abyte, i2, j1, l2, j2, k1, i3, i1);
+            }
+        }
+        abyte
+    }
+
     pub fn findTopSolidBlock(&self, x: i32, z: i32) -> i32
     {
         let chunk: Rc<Chunk> = self.getChunkFromBlockCoords(x, z);
@@ -355,15 +458,6 @@ impl World
         block > 0 && blockx.is_none() && block1x.canPlaceBlockOnSide(self, x, y, z, face)
     }
 
-    pub fn playNoteAt(self: &Rc<Self>, x: i32, y: i32, z: i32, kind: i32, data: i32)
-    {
-        let i: i32 = self.getBlockId(x, y, z);
-        if i > 0
-        {
-            Block::byId(i).orNpe().playBlock(self, x, y, z, kind, data);
-        }
-    }
-
     pub fn setChunkData(&self, minX: i32, minY: i32, minZ: i32, widthX: i32, height: i32, widthZ: i32, data: &[i8])
     {
         let i: i32 = minX >> 4;
@@ -423,5 +517,14 @@ impl World
             self.m_worldAccesses.get(i).doNothingWithTileEntity(x, y, z, blockEntity);
             i += 1;
         }
+    }
+}
+
+pub fn playNoteAt(this: &Rc<World>, x: i32, y: i32, z: i32, kind: i32, data: i32)
+{
+    let i: i32 = this.getBlockId(x, y, z);
+    if i > 0
+    {
+        Block::byId(i).orNpe().playBlock(this, x, y, z, kind, data);
     }
 }

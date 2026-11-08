@@ -2,7 +2,7 @@ use crate::network::net_handler::NetHandler;
 use crate::network::packet::{Packet, PacketBase, PacketInput, PacketOutput};
 use jvm::io::IoResult;
 
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub struct Packet27Position
 {
     m_base: PacketBase,
@@ -42,4 +42,19 @@ impl Packet for Packet27Position
     fn processPacket(&self, handler: &dyn NetHandler) { handler.handlePlayerInput(self); }
 
     fn getPacketSize(&self) -> i32 { 18 }
+}
+
+impl Packet27Position
+{
+    pub fn getSidewaysSpeed(&self) -> f32 { self.m_sidewaysSpeed }
+
+    pub fn getPitch(&self) -> f32 { self.m_pitch }
+
+    pub fn getForwardSpeed(&self) -> f32 { self.m_forwardSpeed }
+
+    pub fn getYaw(&self) -> f32 { self.m_yaw }
+
+    pub fn getJumping(&self) -> bool { self.m_jumping }
+
+    pub fn getSneaking(&self) -> bool { self.m_sneaking }
 }

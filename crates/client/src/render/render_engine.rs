@@ -157,7 +157,12 @@ impl RenderEngine
 
     fn anaglyph(&self) -> bool { self.m_options.as_ref().is_some_and(|options| options.m_anaglyph.get()) }
 
-    fn loadImage(&self, pack: &Rc<dyn TexturePackBase>, path: &str) -> IoResult<Rc<BufferedImage>>
+    fn loadImage(
+        &self,
+        pack: &Rc<dyn TexturePackBase>,
+        path: &str,
+        missingFallback: bool,
+    ) -> IoResult<Rc<BufferedImage>>
     {
         match textureKind(path)
         {
@@ -174,9 +179,20 @@ impl RenderEngine
             }
             TextureKind::Plain(rest) => match pack.getResourceAsStream(rest)
             {
-                None => Ok(Rc::clone(&self.m_missingTextureImage)),
-                Some(stream) => readTextureImage(Some(stream)),
+                None if missingFallback => Ok(Rc::clone(&self.m_missingTextureImage)),
+                stream => readTextureImage(stream),
             },
+        }
+    }
+
+    fn resetFilter(&self, path: &str)
+    {
+        match textureKind(path)
+        {
+            TextureKind::Clamp(_) => self.m_clampTexture.set(false),
+            TextureKind::Blur(_) => self.m_blurTexture.set(false),
+            TextureKind::Columns(_) | TextureKind::Plain(_) =>
+            {}
         }
     }
 
@@ -193,12 +209,13 @@ impl RenderEngine
             return colors;
         }
         let pack: Rc<dyn TexturePackBase> = self.m_texturePack.selected();
-        let colors: Vec<i32> = match self.loadImage(&pack, path)
+        let colors: Vec<i32> = match self.loadImage(&pack, path, true)
         {
             Ok(image) =>
             {
-                self.resetFilters();
-                readColors(&image)
+                let colors: Vec<i32> = readColors(&image);
+                self.resetFilter(path);
+                colors
             }
             Err(error) =>
             {
@@ -226,12 +243,12 @@ impl RenderEngine
         }
         let pack: Rc<dyn TexturePackBase> = self.m_texturePack.selected();
         let j: i32 = self.generateTextureName();
-        let texture: i32 = match self.loadImage(&pack, path)
+        let texture: i32 = match self.loadImage(&pack, path, true)
         {
             Ok(image) =>
             {
                 self.setupTexture(&image, j);
-                self.resetFilters();
+                self.resetFilter(path);
                 j
             }
             Err(error) =>
@@ -592,7 +609,7 @@ impl RenderEngine
         let textures: Vec<(JString, i32)> = self.m_textureMap.borrow().entries();
         for (path, id) in textures
         {
-            match self.loadImage(&pack, &path.to_string())
+            match self.loadImage(&pack, &path.to_string(), false)
             {
                 Ok(image) =>
                 {
@@ -605,7 +622,7 @@ impl RenderEngine
         let colors: Vec<(JString, Rc<RefCell<Vec<i32>>>)> = self.m_colors.borrow().entries();
         for (path, colors) in colors
         {
-            match self.loadImage(&pack, &path.to_string())
+            match self.loadImage(&pack, &path.to_string(), false)
             {
                 Ok(image) =>
                 {

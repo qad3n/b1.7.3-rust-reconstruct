@@ -142,6 +142,8 @@ impl World
 
     pub fn saveHandler(&self) -> Rc<dyn ISaveHandler> { self.m_saveHandler.get().orNpe() }
 
+    pub fn getWorldFile(&self) -> Option<Rc<dyn ISaveHandler>> { self.m_saveHandler.get() }
+
     pub fn getWorldChunkManager(&self) -> Rc<crate::worldgen::WorldChunkManager>
     {
         self.worldProvider().m_worldChunkMgr.get().orNpe()
@@ -394,13 +396,13 @@ impl World
         self.m_spawnPeacefulMobs.set(spawnMonsters);
     }
 
-    pub fn canModify(&self, _player: &Rc<Entity>, _x: i32, _y: i32, _z: i32) -> bool { true }
-
-    pub fn doEntityEvent(&self, _entity: &Rc<Entity>, _event: i8) {}
-
     pub fn prepare(&self)
     {
         while self.chunkProvider().unload100OldestChunks()
         {}
     }
 }
+
+pub fn canModify(_this: &Rc<World>, _player: &Rc<Entity>, _x: i32, _y: i32, _z: i32) -> bool { true }
+
+pub fn doEntityEvent(_this: &Rc<World>, _entity: &Rc<Entity>, _event: i8) {}

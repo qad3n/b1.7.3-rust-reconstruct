@@ -1,3 +1,4 @@
+// java.io.RandomAccessFile is a port stand-in
 use crate::port::random_access_file::RandomAccessFile;
 use jvm::array_list::JArrayList;
 use jvm::io::{ByteArrayInputStream, DataInputStream, DataOutputStream, InputStream, IoResult, OutputStream};

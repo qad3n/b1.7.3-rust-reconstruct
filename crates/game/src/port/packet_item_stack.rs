@@ -3,7 +3,6 @@ use crate::network::packet::{PacketInput, PacketOutput};
 use jvm::io::IoResult;
 use std::rc::Rc;
 
-// the itemID, stackSize and itemDamage an ItemStack field carries between the network threads and the game
 #[derive(Clone, Copy, Debug)]
 pub struct PacketItemStack
 {
@@ -25,7 +24,6 @@ impl PacketItemStack
 
     pub fn fromOption(item: Option<&Rc<ItemStack>>) -> Option<PacketItemStack> { item.map(|item| Self::from(item)) }
 
-    // new ItemStack(id, count, damage) of the reading packet, built on the game thread
     pub fn toItemStack(&self) -> Rc<ItemStack>
     {
         ItemStack::withDamage(self.m_itemID, self.m_stackSize, self.m_itemDamage)
@@ -36,7 +34,6 @@ impl PacketItemStack
         item.map(|item| item.toItemStack())
     }
 
-    // the short id, byte count and short damage block of Packet15Place, Packet102WindowClick and Packet103SetSlot
     pub fn read(input: &mut PacketInput) -> IoResult<Option<PacketItemStack>>
     {
         let s: i16 = input.readShort()?;

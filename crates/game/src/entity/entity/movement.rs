@@ -309,24 +309,7 @@ pub fn moveEntity(this: &Rc<Entity>, dx: f64, dy: f64, dz: f64)
     }
 }
 
-impl Entity
-{
-    pub fn updateFallState(self: &Rc<Self>, dy: f64, onGround: bool)
-    {
-        if onGround
-        {
-            if self.m_fallDistance.get() > 0.0
-            {
-                self.fall(self.m_fallDistance.get());
-                self.m_fallDistance.set(0.0);
-            }
-        }
-        else if dy < 0.0
-        {
-            self.m_fallDistance.set((self.m_fallDistance.get() as f64 - dy) as f32);
-        }
-    }
-}
+impl Entity {}
 
 pub fn setPositionAndRotation2(this: &Rc<Entity>, x: f64, y: f64, z: f64, yaw: f32, pitch: f32, _steps: i32)
 {
@@ -413,4 +396,20 @@ pub fn pushOutOfBlocks(this: &Rc<Entity>, x: f64, y: f64, z: f64) -> bool
         }
     }
     false
+}
+
+pub fn updateFallState(this: &Rc<Entity>, dy: f64, onGround: bool)
+{
+    if onGround
+    {
+        if this.m_fallDistance.get() > 0.0
+        {
+            this.fall(this.m_fallDistance.get());
+            this.m_fallDistance.set(0.0);
+        }
+    }
+    else if dy < 0.0
+    {
+        this.m_fallDistance.set((this.m_fallDistance.get() as f64 - dy) as f32);
+    }
 }

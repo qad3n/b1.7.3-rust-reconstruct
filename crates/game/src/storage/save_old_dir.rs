@@ -1,7 +1,9 @@
 use crate::entity::Entity;
+// java.io.File calls are port stand-ins
 use crate::port::file;
 use crate::storage::mc_region_chunk_loader::McRegionChunkLoader;
 use crate::storage::save_handler::SaveHandler;
+use crate::storage::{IPlayerFileData, RegionFileCache};
 use crate::world::{IChunkLoader, ISaveHandler, WorldInfo, WorldProvider};
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
@@ -47,5 +49,16 @@ impl ISaveHandler for SaveOldDir
 
     fn saveWorldInfo(&self, info: &Rc<WorldInfo>) { self.m_base.saveWorldInfo(info); }
 
+    fn getPlayerDataStorage(self: Rc<Self>) -> Rc<dyn IPlayerFileData> { self }
+
+    fn forceSave(&self) { RegionFileCache::flush(); }
+
     fn getDataFile(&self, name: &str) -> Option<PathBuf> { self.m_base.getDataFile(name) }
+}
+
+impl IPlayerFileData for SaveOldDir
+{
+    fn writePlayerData(&self, player: &Rc<Entity>) { self.m_base.writePlayerData(player); }
+
+    fn readPlayerData(&self, player: &Rc<Entity>) { self.m_base.readPlayerData(player); }
 }

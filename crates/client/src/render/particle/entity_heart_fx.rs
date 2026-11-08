@@ -20,6 +20,7 @@ pub fn renderGrowing(
     sideways: f32,
 )
 {
+    // the game crate entity vtable passes the tessellator as Any so port downcasts it
     let tessellator: &crate::render::Tessellator = crate::port::tessellator(target);
     entity_fx::growScale(this, extra::<InitialSize>(this).m_initialSize.get(), tickDelta);
     entity_fx::renderParticle(this, tessellator, tickDelta, dx, dy, dz, forwards, sideways);

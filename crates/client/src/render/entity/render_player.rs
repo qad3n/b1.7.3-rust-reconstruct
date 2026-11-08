@@ -269,19 +269,6 @@ pub fn drawFirstPersonHand(this: &Render)
     model.m_bipedRightArm.render(MODEL_SCALE);
 }
 
-pub fn drawFirstPersonHandOf(player: &Entity)
-{
-    let render: Rc<Render> = crate::render::RenderManager::instance().getEntityRenderObject(player).orNpe();
-    if !render.instanceOf("RenderPlayer")
-    {
-        jvm::throwable::throw(
-            &jvm::throwable::CLASS_CAST,
-            &format!("{} cannot be cast to RenderPlayer", render.className()),
-        );
-    }
-    drawFirstPersonHand(&render);
-}
-
 fn applyTranslation(this: &Rc<Render>, entity: &Rc<Entity>, dx: f64, dy: f64, dz: f64)
 {
     if entity.isEntityAlive() && entity.isPlayerSleeping()

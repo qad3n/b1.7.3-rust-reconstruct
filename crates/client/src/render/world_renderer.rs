@@ -64,7 +64,7 @@ fn identitySet(entities: &[Rc<TileEntity>]) -> Vec<Rc<TileEntity>>
 impl WorldRenderer
 {
     pub fn new(
-        world: &Rc<World>,
+        world: Option<Rc<World>>,
         blockEntitiesToBeRendered: &Rc<JArrayList<Rc<TileEntity>>>,
         originX: i32,
         originY: i32,
@@ -74,7 +74,7 @@ impl WorldRenderer
     ) -> WorldRenderer
     {
         let renderer: WorldRenderer = WorldRenderer {
-            m_worldObj: Field::new(Some(Rc::clone(world))),
+            m_worldObj: Field::new(world),
             m_glRenderList: glList,
             m_posX: Cell::new(-999),
             m_posY: Cell::new(0),

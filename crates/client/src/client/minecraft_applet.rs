@@ -98,6 +98,7 @@ impl MinecraftApplet
         self.m_mcThread.set(true);
         if let Some(mc) = self.m_mc.get()
         {
+            // the applet runs the game on the calling thread instead of starting one
             jvm::thread::setCurrentName(jvm::string::JString::from("Minecraft main thread"));
             mc.run();
         }

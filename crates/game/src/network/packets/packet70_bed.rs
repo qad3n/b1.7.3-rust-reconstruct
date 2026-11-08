@@ -4,11 +4,16 @@ use jvm::io::IoResult;
 
 pub const EVENT_MESSAGES: [Option<&str>; 3] = [Some("tile.bed.notValid"), None, None];
 
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub struct Packet70Bed
 {
     m_base: PacketBase,
     pub m_event: i32,
+}
+
+impl Packet70Bed
+{
+    pub fn new(n: i32) -> Self { Self { m_event: n, ..Self::default() } }
 }
 
 impl Packet for Packet70Bed

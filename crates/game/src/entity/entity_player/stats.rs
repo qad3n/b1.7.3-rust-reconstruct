@@ -24,7 +24,7 @@ pub fn readEntityFromNBT(this: &Rc<Entity>, nbt: &NBTTagCompound)
             math_helper::floor_double(this.posY()),
             math_helper::floor_double(this.posZ()),
         )));
-        super::wakeUpPlayer(this, true, true, false);
+        this.wakeUpPlayer(true, true, false);
     }
     if nbt.hasKey("SpawnX") && nbt.hasKey("SpawnY") && nbt.hasKey("SpawnZ")
     {

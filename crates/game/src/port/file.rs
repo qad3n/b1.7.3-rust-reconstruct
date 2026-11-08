@@ -1,7 +1,5 @@
 use std::path::{Path, PathBuf};
 
-// java.io.File calls report failure through their return value and never throw
-
 pub fn exists(path: &Path) -> bool { path.exists() }
 
 pub fn isDirectory(path: &Path) -> bool { path.is_dir() }
@@ -44,14 +42,12 @@ pub fn getName(path: &Path) -> String
     path.file_name().map_or_else(String::new, |name| name.to_string_lossy().into_owned())
 }
 
-// null when the path is no directory, entries in readdir order like File.list
 pub fn listFiles(path: &Path) -> Option<Vec<PathBuf>>
 {
     let entries: std::fs::ReadDir = std::fs::read_dir(path).ok()?;
     Some(entries.filter_map(Result::ok).map(|entry| entry.path()).collect())
 }
 
-// Integer.toString(int, 36)
 pub fn toStringRadix36(value: i32) -> String
 {
     const DIGITS: &[u8; 36] = b"0123456789abcdefghijklmnopqrstuvwxyz";

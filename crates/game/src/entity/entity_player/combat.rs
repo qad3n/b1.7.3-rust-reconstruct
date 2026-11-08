@@ -8,6 +8,7 @@ use crate::math::{AxisAlignedBB, math_helper};
 use crate::stats::StatList;
 use crate::world::World;
 use jvm::string::JString;
+use jvm::throwable::OrNpe;
 use std::rc::Rc;
 
 const PI_F: f32 = std::f64::consts::PI as f32;
@@ -18,7 +19,7 @@ pub fn onDeath(this: &Rc<Entity>, killer: Option<&Rc<Entity>>)
     this.setSize(0.2, 0.2);
     this.setPosition(this.posX(), this.posY(), this.posZ());
     this.m_motionY.set(0.1f32 as f64);
-    if fields(this).m_username.get() == Some(JString::from("Notch"))
+    if fields(this).m_username.get().orNpe() == JString::from("Notch")
     {
         dropPlayerItemWithRandomChoice(this, Some(ItemStack::withItemCount(&Item::appleRed(), 1)), true);
     }
@@ -49,7 +50,7 @@ pub fn attackEntityFrom(this: &Rc<Entity>, source: Option<&Rc<Entity>>, mut amou
     }
     if this.isPlayerSleeping() && !world.m_multiplayerWorld.get()
     {
-        super::wakeUpPlayer(this, true, true, false);
+        this.wakeUpPlayer(true, true, false);
     }
     if source.is_some_and(|source| source.instanceOf("EntityMob") || source.instanceOf("EntityArrow"))
     {
@@ -86,7 +87,7 @@ pub fn attackEntityFrom(this: &Rc<Entity>, source: Option<&Rc<Entity>>, mut amou
     (entity_living::CLASS.attackEntityFrom)(this, source, amount)
 }
 
-fn pvpEnabled(_this: &Entity) -> bool { false }
+pub(super) fn pvpEnabled(_this: &Rc<Entity>) -> bool { false }
 
 pub fn alertWolves(this: &Rc<Entity>, target: &Rc<Entity>, wasAttackedByTarget: bool)
 {
@@ -94,14 +95,12 @@ pub fn alertWolves(this: &Rc<Entity>, target: &Rc<Entity>, wasAttackedByTarget: 
     {
         return;
     }
-    let username: Option<JString> = fields(this).m_username.get();
-    if target.instanceOf("EntityWolf")
-        && entity_wolf::isWolfTamed(target)
-        && username == entity_wolf::getWolfOwner(target)
+    let ownedBy = |wolf: &Rc<Entity>| Some(fields(this).m_username.get().orNpe()) == entity_wolf::getWolfOwner(wolf);
+    if target.instanceOf("EntityWolf") && entity_wolf::isWolfTamed(target) && ownedBy(target)
     {
         return;
     }
-    if !target.instanceOf("EntityPlayer") || pvpEnabled(this)
+    if !target.instanceOf("EntityPlayer") || this.pvpEnabled()
     {
         let bounds: Rc<AxisAlignedBB> = AxisAlignedBB::getBoundingBoxFromPool(
             this.posX(),
@@ -116,7 +115,7 @@ pub fn alertWolves(this: &Rc<Entity>, target: &Rc<Entity>, wasAttackedByTarget: 
         {
             if entity_wolf::isWolfTamed(&wolf)
                 && entity_creature::getTarget(&wolf).is_none()
-                && username == entity_wolf::getWolfOwner(&wolf)
+                && ownedBy(&wolf)
                 && (!wasAttackedByTarget || !entity_wolf::isWolfSitting(&wolf))
             {
                 entity_wolf::setWolfSitting(&wolf, false);

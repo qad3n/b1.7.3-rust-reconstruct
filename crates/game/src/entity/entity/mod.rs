@@ -256,8 +256,6 @@ impl Entity
         self.m_prevRotationYaw.set(self.m_prevRotationYaw.get() + (self.m_rotationYaw.get() - f1));
     }
 
-    pub fn setWorld(&self, world: Option<Rc<World>>) { self.m_worldObj.set(world); }
-
     pub fn setPositionAndRotation(&self, x: f64, y: f64, z: f64, yaw: f32, pitch: f32)
     {
         self.m_posX.set(x);
@@ -345,6 +343,8 @@ impl Entity
     {
         (self.m_dataWatcher.getWatchableObjectByte(0) as i32 & 1 << index) != 0
     }
+
+    pub fn setSneaking(&self, sneaking: bool) { self.setEntityFlag(1, sneaking); }
 
     pub fn setEntityFlag(&self, index: i32, value: bool)
     {
@@ -445,3 +445,5 @@ impl JavaObject for Entity
 
     fn javaHash(&self) -> i32 { self.hashCode() }
 }
+
+pub fn setWorld(this: &Rc<Entity>, world: Option<Rc<World>>) { this.m_worldObj.set(world); }

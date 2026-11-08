@@ -486,6 +486,7 @@ dependencies = [
 name = "jvm"
 version = "0.1.0"
 dependencies = [
+ "chrono",
  "flate2",
  "png",
 ]
@@ -503,7 +504,6 @@ dependencies = [
  "anyhow",
  "serde_json",
  "sha1_smol",
- "thiserror 2.0.21",
  "ureq",
  "zip",
 ]

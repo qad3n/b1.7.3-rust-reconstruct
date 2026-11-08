@@ -2,7 +2,6 @@ use jvm::io::{self, IoResult};
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::Path;
 
-// java.io.RandomAccessFile in "rw" mode
 pub struct RandomAccessFile
 {
     m_file: std::fs::File,

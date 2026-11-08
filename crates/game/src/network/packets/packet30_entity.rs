@@ -2,7 +2,7 @@ use crate::network::net_handler::NetHandler;
 use crate::network::packet::{Packet, PacketBase, PacketInput, PacketOutput};
 use jvm::io::IoResult;
 
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub struct Packet30Entity
 {
     m_base: PacketBase,
@@ -17,6 +17,8 @@ pub struct Packet30Entity
 
 impl Packet30Entity
 {
+    pub fn new(id: i32) -> Self { Self { m_entityId: id, ..Self::default() } }
+
     fn readMove(&mut self, input: &mut PacketInput) -> IoResult<()>
     {
         self.m_xPosition = input.readByte()?;
@@ -63,6 +65,7 @@ impl Packet for Packet30Entity
     fn getPacketSize(&self) -> i32 { 4 }
 }
 
+#[derive(Clone)]
 pub struct Packet33RelEntityMoveLook
 {
     pub m_entity: Packet30Entity,
@@ -71,6 +74,21 @@ pub struct Packet33RelEntityMoveLook
 impl Default for Packet33RelEntityMoveLook
 {
     fn default() -> Self { Self { m_entity: Packet30Entity { m_rotating: true, ..Packet30Entity::default() } } }
+}
+
+impl Packet33RelEntityMoveLook
+{
+    pub fn new(id: i32, dx: i8, dy: i8, dz: i8, yaw: i8, pitch: i8) -> Self
+    {
+        let mut entity: Packet30Entity = Packet30Entity::new(id);
+        entity.m_xPosition = dx;
+        entity.m_yPosition = dy;
+        entity.m_zPosition = dz;
+        entity.m_yaw = yaw;
+        entity.m_pitch = pitch;
+        entity.m_rotating = true;
+        Self { m_entity: entity }
+    }
 }
 
 impl Packet for Packet33RelEntityMoveLook
@@ -96,6 +114,7 @@ impl Packet for Packet33RelEntityMoveLook
     fn getPacketSize(&self) -> i32 { 9 }
 }
 
+#[derive(Clone)]
 pub struct Packet32EntityLook
 {
     pub m_entity: Packet30Entity,
@@ -104,6 +123,18 @@ pub struct Packet32EntityLook
 impl Default for Packet32EntityLook
 {
     fn default() -> Self { Self { m_entity: Packet30Entity { m_rotating: true, ..Packet30Entity::default() } } }
+}
+
+impl Packet32EntityLook
+{
+    pub fn new(id: i32, yaw: i8, pitch: i8) -> Self
+    {
+        let mut entity: Packet30Entity = Packet30Entity::new(id);
+        entity.m_yaw = yaw;
+        entity.m_pitch = pitch;
+        entity.m_rotating = true;
+        Self { m_entity: entity }
+    }
 }
 
 impl Packet for Packet32EntityLook
@@ -127,10 +158,22 @@ impl Packet for Packet32EntityLook
     fn getPacketSize(&self) -> i32 { 6 }
 }
 
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub struct Packet31RelEntityMove
 {
     pub m_entity: Packet30Entity,
+}
+
+impl Packet31RelEntityMove
+{
+    pub fn new(id: i32, dx: i8, dy: i8, dz: i8) -> Self
+    {
+        let mut entity: Packet30Entity = Packet30Entity::new(id);
+        entity.m_xPosition = dx;
+        entity.m_yPosition = dy;
+        entity.m_zPosition = dz;
+        Self { m_entity: entity }
+    }
 }
 
 impl Packet for Packet31RelEntityMove

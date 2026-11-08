@@ -1,4 +1,5 @@
 pub mod array_list;
+pub mod calendar;
 pub mod character;
 pub mod field;
 pub mod floating_decimal;
@@ -8,6 +9,7 @@ pub mod image;
 pub mod integer;
 pub mod io;
 pub mod locale;
+pub mod logging;
 pub mod math;
 pub mod md5;
 pub mod net;

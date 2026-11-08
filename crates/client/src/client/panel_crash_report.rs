@@ -47,6 +47,7 @@ impl PanelCrashReport
 {
     pub fn new(report: &UnexpectedThrowable) -> PanelCrashReport
     {
+        // the awt crash panel is not ported so its text goes to stderr
         eprint!("{}", PanelCrashReport::text(report));
         PanelCrashReport
     }

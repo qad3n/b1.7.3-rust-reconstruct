@@ -301,6 +301,7 @@ impl Minecraft
         inventory(&self.thePlayer()).setCurrentItem(n, self.playerController().instanceOf("PlayerControllerTest"));
     }
 
+    // the https login url fails on the plain http stand-in like the dead endpoint
     fn initLicenseCheckThread(&self)
     {
         let session: Rc<crate::client::Session> = self.m_session.get().orNpe();

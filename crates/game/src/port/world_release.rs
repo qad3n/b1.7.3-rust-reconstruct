@@ -1,8 +1,6 @@
 use crate::world::{Chunk, World};
 use std::rc::Rc;
 
-// a world the game has let go of still holds strong back references from its chunks, entities and providers
-// like the java original; emptying its own collections lets those objects drop, and the game never reads them again
 pub fn releaseWorld(world: &World)
 {
     if let Some(provider) = world.m_chunkProvider.get()

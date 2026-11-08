@@ -1,8 +1,7 @@
 use crate::block::{Material, block_bed};
 use crate::entity::{
     Entity, entity_chicken, entity_cow, entity_creeper, entity_ghast, entity_living, entity_pig, entity_pig_zombie,
-    entity_player, entity_sheep, entity_skeleton, entity_slime, entity_spider, entity_squid, entity_wolf,
-    entity_zombie,
+    entity_sheep, entity_skeleton, entity_slime, entity_spider, entity_squid, entity_wolf, entity_zombie,
 };
 use crate::math::math_helper;
 use crate::pathfinding::{PathEntity, PathPoint, Pathfinder};
@@ -323,7 +322,7 @@ impl SpawnerAnimals
                     entityliving.setLocationAndAngles(x as f64, y as f64, z as f64, 0.0, 0.0);
                     world.entityJoinedWorld(&entityliving);
                     Self::creatureSpecificInit(&entityliving, world, x, y, z);
-                    entity_player::wakeUpPlayer(entityplayer, true, false, false);
+                    entityplayer.wakeUpPlayer(true, false, false);
                     entity_living::playLivingSound(&entityliving);
                     flag = true;
                     flag1 = true;

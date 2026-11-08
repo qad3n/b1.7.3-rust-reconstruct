@@ -2,11 +2,16 @@ use crate::network::net_handler::NetHandler;
 use crate::network::packet::{Packet, PacketBase, PacketInput, PacketOutput};
 use jvm::io::IoResult;
 
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub struct Packet4UpdateTime
 {
     m_base: PacketBase,
     pub m_time: i64,
+}
+
+impl Packet4UpdateTime
+{
+    pub fn new(l: i64) -> Self { Self { m_time: l, ..Self::default() } }
 }
 
 impl Packet for Packet4UpdateTime

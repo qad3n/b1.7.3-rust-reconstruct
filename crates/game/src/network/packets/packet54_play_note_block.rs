@@ -2,7 +2,7 @@ use crate::network::net_handler::NetHandler;
 use crate::network::packet::{self, Packet, PacketBase, PacketInput, PacketOutput};
 use jvm::io::IoResult;
 
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub struct Packet54PlayNoteBlock
 {
     m_base: PacketBase,
@@ -11,6 +11,14 @@ pub struct Packet54PlayNoteBlock
     pub m_zLocation: i32,
     pub m_instrumentType: i32,
     pub m_pitch: i32,
+}
+
+impl Packet54PlayNoteBlock
+{
+    pub fn new(n: i32, n2: i32, n3: i32, n4: i32, n5: i32) -> Self
+    {
+        Self { m_xLocation: n, m_yLocation: n2, m_zLocation: n3, m_instrumentType: n4, m_pitch: n5, ..Self::default() }
+    }
 }
 
 impl Packet for Packet54PlayNoteBlock

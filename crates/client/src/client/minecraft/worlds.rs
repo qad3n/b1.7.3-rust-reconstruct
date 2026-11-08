@@ -1,5 +1,6 @@
 use crate::client::Minecraft;
 use crate::entity::entity_player_sp;
+// a discarded world is emptied in port to break rust reference cycles
 use crate::port::world_release::releaseDiscardedWorld;
 use crate::settings::MovementInput;
 use common::world::IProgressUpdate;

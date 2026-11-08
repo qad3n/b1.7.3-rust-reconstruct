@@ -1,5 +1,6 @@
 use crate::network::net_handler::NetHandler;
 use crate::network::packets::*;
+// java monitors are mutexes that ignore poisoning in port
 use crate::port::network::lock;
 use jvm::io::{DataInputStream, DataOutputStream, InputStream, IoResult, OutputStream, ioError};
 use jvm::string::JString;
@@ -32,7 +33,17 @@ impl Default for PacketBase
     }
 }
 
-pub trait Packet: Any + Send
+pub trait PacketClone
+{
+    fn clonePacket(&self) -> Box<dyn Packet>;
+}
+
+impl<T: Packet + Clone> PacketClone for T
+{
+    fn clonePacket(&self) -> Box<dyn Packet> { Box::new(self.clone()) }
+}
+
+pub trait Packet: Any + Send + PacketClone
 {
     fn base(&self) -> &PacketBase;
 
@@ -43,6 +54,8 @@ pub trait Packet: Any + Send
     fn processPacket(&self, handler: &dyn NetHandler);
 
     fn getPacketSize(&self) -> i32;
+
+    fn typeName(&self) -> &'static str { std::any::type_name::<Self>() }
 
     fn getPacketId(&self) -> i32
     {
@@ -232,4 +245,18 @@ pub fn readString<S: InputStream>(input: &mut DataInputStream<S>, maxLength: i32
         chars.push(input.readChar()?);
     }
     Ok(JString::fromUtf16(chars))
+}
+
+pub fn className(packet: &dyn Packet) -> String
+{
+    let name: &str = packet.typeName().rsplit("::").next().unwrap_or_default();
+    match name
+    {
+        "Packet11PlayerPosition" | "Packet12PlayerLook" | "Packet13PlayerLookMove" => format!("Packet10Flying${name}"),
+        "Packet31RelEntityMove" | "Packet32EntityLook" | "Packet33RelEntityMoveLook" =>
+        {
+            format!("Packet30Entity${name}")
+        }
+        _ => name.to_string(),
+    }
 }

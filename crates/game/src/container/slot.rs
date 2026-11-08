@@ -61,6 +61,11 @@ impl Slot
 
     pub fn ext<T: 'static>(&self) -> &T { self.m_ext.downcast_ref::<T>().expect("slot ext matches its class") }
 
+    pub fn isHere(&self, inventory: &Rc<dyn IInventory>, slot: i32) -> bool
+    {
+        std::ptr::addr_eq(Rc::as_ptr(inventory), Rc::as_ptr(&self.m_inventory)) && slot == self.m_slotIndex
+    }
+
     pub fn getStack(&self) -> Option<Rc<ItemStack>> { self.m_inventory.getStackInSlot(self.m_slotIndex) }
 
     pub fn getHasStack(&self) -> bool { self.getStack().is_some() }

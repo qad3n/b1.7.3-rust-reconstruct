@@ -6,7 +6,6 @@ use jvm::io::IoResult;
 use jvm::string::JString;
 use std::rc::Rc;
 
-// DataWatcher.WatchableObject as read on a network thread, WatchedValue holds an Rc ItemStack that cannot cross threads
 #[derive(Clone, Debug)]
 pub enum WatchedData
 {
@@ -44,12 +43,42 @@ impl WatchableData
         Rc::new(WatchableObject::new(self.m_objectType, self.m_dataValueId, value))
     }
 
+    fn fromWatchableObject(object: &WatchableObject) -> WatchableData
+    {
+        let value: WatchedData = match object.getObject()
+        {
+            WatchedValue::Byte(value) => WatchedData::Byte(value),
+            WatchedValue::Short(value) => WatchedData::Short(value),
+            WatchedValue::Int(value) => WatchedData::Int(value),
+            WatchedValue::Float(value) => WatchedData::Float(value),
+            WatchedValue::String(value) => WatchedData::String(value),
+            WatchedValue::ItemStack(item) => WatchedData::ItemStack(PacketItemStack {
+                m_itemID: item.getItem().m_shiftedIndex,
+                m_stackSize: item.m_stackSize.get(),
+                m_itemDamage: item.getItemDamage(),
+            }),
+            WatchedValue::ChunkCoordinates(coordinates) =>
+            {
+                WatchedData::ChunkCoordinates(coordinates.m_x, coordinates.m_y, coordinates.m_z)
+            }
+        };
+        WatchableData {
+            m_objectType: object.getObjectType(),
+            m_dataValueId: object.getDataValueId(),
+            m_watchedObject: value,
+        }
+    }
+
+    pub fn fromWatchableObjects(entries: Option<&[Rc<WatchableObject>]>) -> Option<Vec<WatchableData>>
+    {
+        entries.map(|entries| entries.iter().map(|entry| WatchableData::fromWatchableObject(entry)).collect())
+    }
+
     pub fn toWatchableObjects(entries: Option<&[WatchableData]>) -> Option<Vec<Rc<WatchableObject>>>
     {
         entries.map(|entries| entries.iter().map(WatchableData::toWatchableObject).collect())
     }
 
-    // DataWatcher.readWatchableObjects
     pub fn readWatchableObjects(input: &mut PacketInput) -> IoResult<Option<Vec<WatchableData>>>
     {
         let mut arraylist: Option<Vec<WatchableData>> = None;
@@ -86,7 +115,6 @@ impl WatchableData
                 }
                 _ => None,
             };
-            // java adds a null entry for an unknown type and the next use of it throws
             let Some(value) = value
             else
             {
@@ -98,7 +126,6 @@ impl WatchableData
         Ok(arraylist)
     }
 
-    // DataWatcher.writeObjectsInListToStream
     pub fn writeObjectsInListToStream(entries: Option<&[WatchableData]>, output: &mut PacketOutput) -> IoResult<()>
     {
         if let Some(entries) = entries

@@ -133,3 +133,31 @@ pub fn openStream(url: &str) -> Result<Vec<u8>, Throwable>
 
 // HttpURLConnection.connect then getResponseCode, which reads the status line without following a redirect
 pub fn getResponseCode(url: &str) -> Result<i32, Throwable> { Ok(get(url)?.m_status) }
+
+pub fn socketAddressToString(address: &std::net::SocketAddr) -> String
+{
+    let host: String = match address.ip().to_canonical()
+    {
+        std::net::IpAddr::V4(ip) => ip.to_string(),
+        std::net::IpAddr::V6(ip) =>
+        {
+            ip.segments().iter().map(|segment| format!("{segment:x}")).collect::<Vec<String>>().join(":")
+        }
+    };
+    format!("/{host}:{}", address.port())
+}
+
+pub fn urlEncode(text: &str) -> String
+{
+    let mut out: String = String::new();
+    for byte in text.bytes()
+    {
+        match byte
+        {
+            b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9' | b'.' | b'-' | b'*' | b'_' => out.push(byte as char),
+            b' ' => out.push('+'),
+            _ => out.push_str(&format!("%{byte:02X}")),
+        }
+    }
+    out
+}

@@ -9,6 +9,7 @@ pub fn init(this: &Rc<Entity>, world: Option<Rc<World>>) { entity_creature::init
 pub const CLASS: EntityClass = EntityClass {
     m_name: "EntityAnimal",
     m_parent: Some(&entity_creature::CLASS),
+    m_interfaces: &["IAnimals"],
     getBlockPathWeight: |this, x, y, z| {
         let world: Rc<World> = this.world();
         if world.getBlockId(x, y - 1, z) == Block::grass().m_blockID

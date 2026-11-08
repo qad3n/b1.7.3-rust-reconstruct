@@ -1,15 +1,32 @@
+use crate::item::ItemStack;
 use crate::network::net_handler::NetHandler;
 use crate::network::packet::{Packet, PacketBase, PacketInput, PacketOutput};
+// item stacks cross the network threads as plain port data
 use crate::port::packet_item_stack::PacketItemStack;
 use jvm::io::IoResult;
 use jvm::throwable::OrNpe;
+use std::rc::Rc;
 
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub struct Packet104WindowItems
 {
     m_base: PacketBase,
     pub m_windowId: i32,
     pub m_itemStack: Option<Vec<Option<PacketItemStack>>>,
+}
+
+impl Packet104WindowItems
+{
+    pub fn new(menuId: i32, items: &[Option<Rc<ItemStack>>]) -> Self
+    {
+        let mut itemStack: Vec<Option<PacketItemStack>> = vec![None; items.len()];
+        for i in 0..itemStack.len()
+        {
+            let itemstack: Option<&Rc<ItemStack>> = items[i].as_ref();
+            itemStack[i] = itemstack.map(|itemstack| PacketItemStack::from(&itemstack.copy()));
+        }
+        Self { m_windowId: menuId, m_itemStack: Some(itemStack), ..Self::default() }
+    }
 }
 
 impl Packet for Packet104WindowItems

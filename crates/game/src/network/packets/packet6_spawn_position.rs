@@ -2,13 +2,21 @@ use crate::network::net_handler::NetHandler;
 use crate::network::packet::{Packet, PacketBase, PacketInput, PacketOutput};
 use jvm::io::IoResult;
 
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub struct Packet6SpawnPosition
 {
     m_base: PacketBase,
     pub m_xPosition: i32,
     pub m_yPosition: i32,
     pub m_zPosition: i32,
+}
+
+impl Packet6SpawnPosition
+{
+    pub fn new(x: i32, y: i32, z: i32) -> Self
+    {
+        Self { m_xPosition: x, m_yPosition: y, m_zPosition: z, ..Self::default() }
+    }
 }
 
 impl Packet for Packet6SpawnPosition

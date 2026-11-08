@@ -81,6 +81,8 @@ impl WatchableObject
 
     pub fn getObjectType(&self) -> i32 { self.m_objectType }
 
+    pub fn getWatching(&self) -> bool { self.m_isWatching.get() }
+
     pub fn setWatching(&self, dirty: bool) { self.m_isWatching.set(dirty); }
 }
 
@@ -116,6 +118,7 @@ impl DataWatcher
         match self.object(id)
         {
             WatchedValue::Byte(value) => value,
+            // a wrong boxed type throws the ClassCastException of the java cast
             other => crate::port::watchedCastError(&other, "java.lang.Byte"),
         }
     }
@@ -125,6 +128,7 @@ impl DataWatcher
         match self.object(id)
         {
             WatchedValue::Int(value) => value,
+            // a wrong boxed type throws the ClassCastException of the java cast
             other => crate::port::watchedCastError(&other, "java.lang.Integer"),
         }
     }
@@ -134,6 +138,7 @@ impl DataWatcher
         match self.object(id)
         {
             WatchedValue::String(value) => value,
+            // a wrong boxed type throws the ClassCastException of the java cast
             other => crate::port::watchedCastError(&other, "java.lang.String"),
         }
     }
@@ -149,6 +154,10 @@ impl DataWatcher
         }
     }
 
+    pub fn getAllWatched(&self) -> Vec<Rc<WatchableObject>> { self.m_watchedObjects.with(JHashMap::values) }
+
+    pub fn hasObjectChanged(&self) -> bool { self.m_objectChanged.get() }
+
     pub fn writeObjectsInListToStream<S: OutputStream>(
         entries: Option<&[Rc<WatchableObject>]>,
         output: &mut DataOutputStream<S>,
@@ -162,6 +171,24 @@ impl DataWatcher
             }
         }
         output.writeByte(127)
+    }
+
+    pub fn getChangedObjects(&self) -> Option<Vec<Rc<WatchableObject>>>
+    {
+        let mut arraylist: Option<Vec<Rc<WatchableObject>>> = None;
+        if self.m_objectChanged.get()
+        {
+            for datawatcher_watchableobject in self.m_watchedObjects.with(JHashMap::values)
+            {
+                if datawatcher_watchableobject.getWatching()
+                {
+                    datawatcher_watchableobject.setWatching(false);
+                    arraylist.get_or_insert_with(Vec::new).push(datawatcher_watchableobject);
+                }
+            }
+        }
+        self.m_objectChanged.set(false);
+        arraylist
     }
 
     pub fn writeWatchableObjects<S: OutputStream>(&self, output: &mut DataOutputStream<S>) -> IoResult<()>
@@ -202,13 +229,13 @@ impl DataWatcher
 
     pub fn readWatchableObjects<S: InputStream>(
         input: &mut DataInputStream<S>,
-    ) -> IoResult<Option<Vec<Rc<WatchableObject>>>>
+    ) -> IoResult<Option<Vec<Option<Rc<WatchableObject>>>>>
     {
-        let mut arraylist: Option<Vec<Rc<WatchableObject>>> = None;
+        let mut arraylist: Option<Vec<Option<Rc<WatchableObject>>>> = None;
         let mut b0: i8 = input.readByte()?;
         while b0 != 127
         {
-            let list: &mut Vec<Rc<WatchableObject>> = arraylist.get_or_insert_with(Vec::new);
+            let list: &mut Vec<Option<Rc<WatchableObject>>> = arraylist.get_or_insert_with(Vec::new);
             let i: i32 = (b0 as i32 & 224) >> 5;
             let j: i32 = b0 as i32 & 31;
             let value: Option<WatchedValue> = match i
@@ -234,12 +261,7 @@ impl DataWatcher
                 }
                 _ => None,
             };
-            let Some(value) = value
-            else
-            {
-                throwable::npe();
-            };
-            list.push(Rc::new(WatchableObject::new(i, j, value)));
+            list.push(value.map(|value| Rc::new(WatchableObject::new(i, j, value))));
             b0 = input.readByte()?;
         }
         Ok(arraylist)

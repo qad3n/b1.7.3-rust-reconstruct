@@ -1,8 +1,10 @@
+use crate::entity::Entity;
+use crate::math::math_helper;
 use crate::network::net_handler::NetHandler;
 use crate::network::packet::{Packet, PacketBase, PacketInput, PacketOutput};
 use jvm::io::IoResult;
 
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub struct Packet23VehicleSpawn
 {
     m_base: PacketBase,
@@ -15,6 +17,59 @@ pub struct Packet23VehicleSpawn
     pub m_velocityZ: i32,
     pub m_type: i32,
     pub m_data: i32,
+}
+
+impl Packet23VehicleSpawn
+{
+    pub fn new(entity: &Entity, r#type: i32) -> Self { Self::withData(entity, r#type, 0) }
+
+    pub fn withData(entity: &Entity, r#type: i32, data: i32) -> Self
+    {
+        let mut packet: Self = Self {
+            m_entityId: entity.m_entityId.get(),
+            m_xPosition: math_helper::floor_double(entity.m_posX.get() * 32.0),
+            m_yPosition: math_helper::floor_double(entity.m_posY.get() * 32.0),
+            m_zPosition: math_helper::floor_double(entity.m_posZ.get() * 32.0),
+            m_type: r#type,
+            m_data: data,
+            ..Self::default()
+        };
+        if data > 0
+        {
+            let mut d: f64 = entity.m_motionX.get();
+            let mut d2: f64 = entity.m_motionY.get();
+            let mut d3: f64 = entity.m_motionZ.get();
+            let d4: f64 = 3.9;
+            if d < -d4
+            {
+                d = -d4;
+            }
+            if d2 < -d4
+            {
+                d2 = -d4;
+            }
+            if d3 < -d4
+            {
+                d3 = -d4;
+            }
+            if d > d4
+            {
+                d = d4;
+            }
+            if d2 > d4
+            {
+                d2 = d4;
+            }
+            if d3 > d4
+            {
+                d3 = d4;
+            }
+            packet.m_velocityX = (d * 8000.0) as i32;
+            packet.m_velocityY = (d2 * 8000.0) as i32;
+            packet.m_velocityZ = (d3 * 8000.0) as i32;
+        }
+        packet
+    }
 }
 
 impl Packet for Packet23VehicleSpawn

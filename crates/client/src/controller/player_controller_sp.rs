@@ -47,7 +47,7 @@ fn sendBlockRemoved(this: &Rc<PlayerController>, x: i32, y: i32, z: i32, face: i
 
 fn clickBlock(this: &Rc<PlayerController>, x: i32, y: i32, z: i32, face: i32)
 {
-    this.theWorld().onBlockHit(&this.thePlayer(), x, y, z, face);
+    this.theWorld().onBlockHit(Some(&this.thePlayer()), x, y, z, face);
     let blockId: i32 = this.theWorld().getBlockId(x, y, z);
     if blockId > 0 && fields(this).m_curBlockDamage.get() == 0.0
     {

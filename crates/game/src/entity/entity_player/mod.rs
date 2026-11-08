@@ -132,11 +132,11 @@ fn onUpdate(this: &Rc<Entity>)
         {
             if !sleep::isInBed(this)
             {
-                wakeUpPlayer(this, true, true, false);
+                this.wakeUpPlayer(true, true, false);
             }
             else if world.isDaytime()
             {
-                wakeUpPlayer(this, false, true, true);
+                this.wakeUpPlayer(false, true, true);
             }
         }
     }
@@ -340,7 +340,7 @@ pub fn destroyCurrentEquippedItem(this: &Entity)
     inventory.setInventorySlotContents(inventory.m_currentItem.get(), None);
 }
 
-pub fn onItemStackChanged(_this: &Rc<Entity>, _item: Option<Rc<ItemStack>>) {}
+fn onItemStackChanged(_this: &Rc<Entity>, _item: Option<Rc<ItemStack>>) {}
 
 pub fn getPlayerSpawnCoordinate(this: &Entity) -> Option<ChunkCoordinates>
 {
@@ -412,6 +412,10 @@ pub const CLASS: EntityClass = EntityClass {
     },
     onLivingUpdate,
     onDeath: combat::onDeath,
+    onItemStackChanged,
+    pvpEnabled: combat::pvpEnabled,
+    sleepInBedAt: sleep::sleepInBedAt,
+    wakeUpPlayer: sleep::wakeUpPlayer,
     addToPlayerScore: |this, victim, score| {
         let player: &PlayerFields = fields(this);
         player.m_score.set(player.m_score.get() + score);

@@ -10,6 +10,7 @@ use crate::block::{Block, block_juke_box};
 use crate::entity::Entity;
 use crate::inventory::IInventory;
 use crate::item::ItemStack;
+use crate::network::packet::Packet;
 use crate::world::World;
 use common::nbt::NBTTagCompound;
 use jvm::field::Field;
@@ -24,6 +25,7 @@ crate::vtable! {
         fn canInteractWith(player: &Rc<Entity>) -> bool;
         fn decrStackSize(slot: i32, amount: i32) -> Option<Rc<ItemStack>>;
         fn getBlockMetadata() -> i32;
+        fn getDescriptionPacket() -> Option<Box<dyn Packet>>;
         fn getInvName() -> &'static str;
         fn getInventoryStackLimit() -> i32;
         fn getSizeInventory() -> i32;
@@ -46,6 +48,7 @@ pub const TILE_ENTITY: TileEntityClass = TileEntityClass {
     m_interfaces: &[],
     canInteractWith: |_, _| notInventory("canInteractWith"),
     decrStackSize: |_, _, _| notInventory("decrStackSize"),
+    getDescriptionPacket: |_| None,
     getBlockMetadata: |this| {
         this.world().getBlockMetadata(this.m_xCoord.get(), this.m_yCoord.get(), this.m_zCoord.get())
     },

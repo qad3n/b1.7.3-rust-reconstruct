@@ -259,7 +259,11 @@ impl RenderGlobal
         self.m_prevSortZ.set(-9999.0);
         RenderManager::instance().setWorld(world.clone());
         self.m_worldObj.set(world.clone());
-        *self.m_globalRenderBlocks.borrow_mut() = Some(RenderBlocks::new(world.clone().orNpe()));
+        *self.m_globalRenderBlocks.borrow_mut() = Some(match world.clone()
+        {
+            Some(world) => RenderBlocks::new(world),
+            None => RenderBlocks::empty(),
+        });
         if let Some(world) = world
         {
             world.addWorldAccess(listener);
@@ -309,7 +313,7 @@ impl RenderGlobal
         }
         self.m_worldRenderersToUpdate.clear();
         self.m_tileEntities.clear();
-        let world: Rc<World> = self.worldObj();
+        let world: Option<Rc<World>> = self.m_worldObj.get();
         for k1 in 0..wide
         {
             for l in 0..tall
@@ -318,7 +322,7 @@ impl RenderGlobal
                 {
                     let index: usize = self.rendererIndex(k1, l, i1);
                     let renderer: Rc<WorldRenderer> = Rc::new(WorldRenderer::new(
-                        &world,
+                        world.clone(),
                         &self.m_tileEntities,
                         k1 * 16,
                         l * 16,

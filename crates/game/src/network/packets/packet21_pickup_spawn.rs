@@ -1,8 +1,13 @@
+use crate::entity::{Entity, entity_item};
+use crate::item::ItemStack;
+use crate::math::math_helper;
 use crate::network::net_handler::NetHandler;
 use crate::network::packet::{Packet, PacketBase, PacketInput, PacketOutput};
 use jvm::io::IoResult;
+use jvm::throwable::OrNpe;
+use std::rc::Rc;
 
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub struct Packet21PickupSpawn
 {
     m_base: PacketBase,
@@ -16,6 +21,27 @@ pub struct Packet21PickupSpawn
     pub m_itemID: i32,
     pub m_count: i32,
     pub m_itemDamage: i32,
+}
+
+impl Packet21PickupSpawn
+{
+    pub fn new(item: &Entity) -> Self
+    {
+        let stack: Rc<ItemStack> = entity_item::fields(item).m_item.get().orNpe();
+        Self {
+            m_entityId: item.m_entityId.get(),
+            m_itemID: stack.m_itemID.get(),
+            m_count: stack.m_stackSize.get(),
+            m_itemDamage: stack.getItemDamage(),
+            m_xPosition: math_helper::floor_double(item.m_posX.get() * 32.0),
+            m_yPosition: math_helper::floor_double(item.m_posY.get() * 32.0),
+            m_zPosition: math_helper::floor_double(item.m_posZ.get() * 32.0),
+            m_rotation: (item.m_motionX.get() * 128.0) as i32 as i8,
+            m_pitch: (item.m_motionY.get() * 128.0) as i32 as i8,
+            m_roll: (item.m_motionZ.get() * 128.0) as i32 as i8,
+            ..Self::default()
+        }
+    }
 }
 
 impl Packet for Packet21PickupSpawn

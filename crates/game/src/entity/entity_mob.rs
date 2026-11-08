@@ -54,7 +54,7 @@ fn getCanSpawnHere(this: &Rc<Entity>) -> bool
 pub const CLASS: EntityClass = EntityClass {
     m_name: "EntityMob",
     m_parent: Some(&entity_creature::CLASS),
-    m_interfaces: &["IMob"],
+    m_interfaces: &["IMob", "IAnimals"],
     onLivingUpdate: |this| {
         let f: f32 = this.getEntityBrightness(1.0);
         if f > 0.5
@@ -79,6 +79,7 @@ pub const CLASS: EntityClass = EntityClass {
     attackEntityFrom: |this, source, amount| {
         if (entity_creature::CLASS.attackEntityFrom)(this, source, amount)
         {
+            // java compares references here and either side may be null
             if sameObject(this.m_riddenByEntity.get().as_ref(), source)
                 || sameObject(this.m_ridingEntity.get().as_ref(), source)
             {

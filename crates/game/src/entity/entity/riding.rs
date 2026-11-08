@@ -78,54 +78,53 @@ pub fn updateRiderPosition(this: &Rc<Entity>)
 
 pub fn getMountedYOffset(this: &Rc<Entity>) -> f64 { this.m_height.get() as f64 * 0.75 }
 
-impl Entity
+impl Entity {}
+
+pub fn mountEntity(this: &Rc<Entity>, entity: Option<&Rc<Entity>>)
 {
-    pub fn mountEntity(self: &Rc<Self>, entity: Option<&Rc<Entity>>)
+    this.m_entityRiderPitchDelta.set(0.0);
+    this.m_entityRiderYawDelta.set(0.0);
+    let Some(entity) = entity
+    else
     {
-        self.m_entityRiderPitchDelta.set(0.0);
-        self.m_entityRiderYawDelta.set(0.0);
-        let Some(entity) = entity
-        else
+        if let Some(riding) = this.m_ridingEntity.get()
         {
-            if let Some(riding) = self.m_ridingEntity.get()
-            {
-                self.setLocationAndAngles(
-                    riding.posX(),
-                    riding.m_boundingBox.minY() + riding.m_height.get() as f64,
-                    riding.posZ(),
-                    self.m_rotationYaw.get(),
-                    self.m_rotationPitch.get(),
-                );
-                riding.m_riddenByEntity.set(None);
-            }
-            self.m_ridingEntity.set(None);
-            return;
-        };
-
-        if let Some(riding) = self.m_ridingEntity.get()
-            && Rc::ptr_eq(&riding, entity)
-        {
-            riding.m_riddenByEntity.set(None);
-            self.m_ridingEntity.set(None);
-            self.setLocationAndAngles(
-                entity.posX(),
-                entity.m_boundingBox.minY() + entity.m_height.get() as f64,
-                entity.posZ(),
-                self.m_rotationYaw.get(),
-                self.m_rotationPitch.get(),
+            this.setLocationAndAngles(
+                riding.posX(),
+                riding.m_boundingBox.minY() + riding.m_height.get() as f64,
+                riding.posZ(),
+                this.m_rotationYaw.get(),
+                this.m_rotationPitch.get(),
             );
-            return;
-        }
-
-        if let Some(riding) = self.m_ridingEntity.get()
-        {
             riding.m_riddenByEntity.set(None);
         }
-        if let Some(rider) = entity.m_riddenByEntity.get()
-        {
-            rider.m_ridingEntity.set(None);
-        }
-        self.m_ridingEntity.set(Some(Rc::clone(entity)));
-        entity.m_riddenByEntity.set(Some(Rc::clone(self)));
+        this.m_ridingEntity.set(None);
+        return;
+    };
+
+    if let Some(riding) = this.m_ridingEntity.get()
+        && Rc::ptr_eq(&riding, entity)
+    {
+        riding.m_riddenByEntity.set(None);
+        this.m_ridingEntity.set(None);
+        this.setLocationAndAngles(
+            entity.posX(),
+            entity.m_boundingBox.minY() + entity.m_height.get() as f64,
+            entity.posZ(),
+            this.m_rotationYaw.get(),
+            this.m_rotationPitch.get(),
+        );
+        return;
     }
+
+    if let Some(riding) = this.m_ridingEntity.get()
+    {
+        riding.m_riddenByEntity.set(None);
+    }
+    if let Some(rider) = entity.m_riddenByEntity.get()
+    {
+        rider.m_ridingEntity.set(None);
+    }
+    this.m_ridingEntity.set(Some(Rc::clone(entity)));
+    entity.m_riddenByEntity.set(Some(Rc::clone(this)));
 }

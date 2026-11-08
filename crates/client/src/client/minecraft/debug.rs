@@ -1,6 +1,7 @@
 use crate::client::Minecraft;
 use crate::entity::entity_client_player_mp;
 use crate::network::net_client_handler::NetClientHandler;
+// os name home folder and a test override for the game folder come from port
 use crate::port::system;
 use crate::render::OpenGlCapsChecker;
 use game::storage::ISaveFormat;

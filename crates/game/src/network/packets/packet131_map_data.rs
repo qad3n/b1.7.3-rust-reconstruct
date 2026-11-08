@@ -3,6 +3,7 @@ use crate::network::packet::{Packet, PacketBase, PacketInput, PacketOutput};
 use jvm::io::IoResult;
 use jvm::throwable::OrNpe;
 
+#[derive(Clone)]
 pub struct Packet131MapData
 {
     m_base: PacketBase,
@@ -14,6 +15,14 @@ pub struct Packet131MapData
 impl Default for Packet131MapData
 {
     fn default() -> Self { Self { m_base: PacketBase::chunkData(), m_type: 0, m_id: 0, m_data: None } }
+}
+
+impl Packet131MapData
+{
+    pub fn new(r#type: i16, id: i16, data: Vec<u8>) -> Self
+    {
+        Self { m_type: r#type, m_id: id, m_data: Some(data), ..Self::default() }
+    }
 }
 
 impl Packet for Packet131MapData

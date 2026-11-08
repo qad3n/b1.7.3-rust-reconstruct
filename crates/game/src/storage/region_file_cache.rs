@@ -20,6 +20,7 @@ impl JavaObject for FileKey
 }
 
 thread_local! {
+    // java soft references become strong ones that live until the cache is cleared
     static CACHE: RefCell<JHashMap<FileKey, Rc<RegionFile>>> = RefCell::new(JHashMap::new());
 }
 

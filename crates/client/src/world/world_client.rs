@@ -371,4 +371,5 @@ pub const CLASS: WorldClass = WorldClass {
         sendQueue(this).sendPacketAndDisconnect(Box::new(Packet255KickDisconnect::new(JString::from("Quitting"))));
     },
     updateWeather,
+    ..WORLD
 };

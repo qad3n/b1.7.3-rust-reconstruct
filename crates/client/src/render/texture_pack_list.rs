@@ -1,6 +1,7 @@
 use crate::client::Minecraft;
 use crate::render::{TexturePackBase, TexturePackCustom, TexturePackDefault};
 use crate::settings::GameSettings;
+// java.io.File calls are port stand-ins
 use game::port::file;
 use jvm::field::Field;
 use jvm::string::JString;

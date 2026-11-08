@@ -1,11 +1,12 @@
 use crate::network::net_handler::NetHandler;
 use crate::network::packet::{self, Packet, PacketBase, PacketInput, PacketOutput};
+// string length of a field java dereferences without a null check comes from port
 use crate::port::network;
 use jvm::io::IoResult;
 use jvm::string::JString;
 use jvm::throwable::OrNpe;
 
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub struct Packet2Handshake
 {
     m_base: PacketBase,

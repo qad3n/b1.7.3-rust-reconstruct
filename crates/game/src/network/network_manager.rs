@@ -1,12 +1,13 @@
 use crate::network::net_handler::NetHandler;
 use crate::network::packet::{self, Packet, PacketInput, PacketOutput};
+// java monitors and null stream errors come from port
 use crate::port::network::{lock, npeError};
 use jvm::io::{
     BufferedOutputStream, DataInputStream, DataOutputStream, InputStream, IoResult, OutputStream, fromStd, ioError,
 };
 use jvm::string::JString;
 use jvm::throwable::{EXCEPTION, IO, Throwable, ThrowableClass, catchThrowable};
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
 use std::io::{ErrorKind, Read, Write};
 use std::net::{Shutdown, TcpStream};
 use std::rc::{Rc, Weak};
@@ -303,6 +304,7 @@ impl Shared
         self.m_isTerminating.store(true, Ordering::Relaxed);
         *lock(&self.m_terminationReason) = JString::from(reason);
         *lock(&self.m_disconnectReasonArgs) = args;
+        // rust has no Thread.stop so the killer thread only consumes its name
         jvm::thread::nextName();
         self.m_isRunning.store(false, Ordering::Relaxed);
         if let Some(socket) = lock(&self.m_networkSocket).as_ref()
@@ -323,7 +325,8 @@ impl Shared
 pub struct NetworkManager
 {
     m_shared: Arc<Shared>,
-    m_netHandler: Weak<dyn NetHandler>,
+    m_remoteSocketAddress: Option<std::net::SocketAddr>,
+    m_netHandler: RefCell<Weak<dyn NetHandler>>,
     m_timeSinceLastRead: Cell<i32>,
 }
 
@@ -340,6 +343,7 @@ impl NetworkManager
         {
             jvm::system::errPrintln(&ex.to_string());
         }
+        let remoteSocketAddress: Option<std::net::SocketAddr> = socket.peer_addr().ok();
         let input: Box<dyn InputStream + Send> =
             Box::new(SocketInputStream { m_socket: socket.try_clone().map_err(|error| fromStd(&error))? });
         let output: Box<dyn OutputStream + Send> = Box::new(BufferedOutputStream::new(
@@ -378,13 +382,25 @@ impl NetworkManager
         {
             unreachable!("the threads are stored once");
         }
-        Ok(Rc::new(NetworkManager { m_shared: shared, m_netHandler: listener, m_timeSinceLastRead: Cell::new(0) }))
+        Ok(Rc::new(NetworkManager {
+            m_shared: shared,
+            m_remoteSocketAddress: remoteSocketAddress,
+            m_netHandler: RefCell::new(listener),
+            m_timeSinceLastRead: Cell::new(0),
+        }))
     }
 
     fn netHandler(&self) -> Rc<dyn NetHandler>
     {
-        self.m_netHandler.upgrade().expect("the net handler outlives its network manager")
+        self.m_netHandler.borrow().upgrade().expect("the net handler outlives its network manager")
     }
+
+    pub fn setChunkDataSendCounter(&self, value: i32)
+    {
+        self.m_shared.m_chunkDataSendCounter.store(value, Ordering::Relaxed);
+    }
+
+    pub fn setNetHandler(&self, handler: Weak<dyn NetHandler>) { *self.m_netHandler.borrow_mut() = handler; }
 
     pub fn addToSendQueue(&self, packet: Box<dyn Packet>)
     {
@@ -454,6 +470,15 @@ impl NetworkManager
         }
     }
 
+    pub fn getRemoteAddress(&self) -> String
+    {
+        match &self.m_remoteSocketAddress
+        {
+            Some(address) => jvm::net::socketAddressToString(address),
+            None => String::from("null"),
+        }
+    }
+
     pub fn close(&self)
     {
         self.wakeThreads();
@@ -480,4 +505,6 @@ impl NetworkManager
             fromStd(&error).printStackTrace();
         }
     }
+
+    pub fn getNumChunkDataPackets(&self) -> i32 { lock(&self.m_shared.m_chunkDataPackets).len() as i32 }
 }

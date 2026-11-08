@@ -53,7 +53,17 @@ impl NoiseGenerator2
         Self { m_permutations: permutations, m_offsetX: offsetX, m_offsetY: offsetY, m_offsetZ: offsetZ }
     }
 
-    fn wrap(x: f64) -> i32 { if x > 0.0 { x as i32 } else { x as i32 - 1 } }
+    fn wrap(x: f64) -> i32
+    {
+        if x > 0.0
+        {
+            x as i32
+        }
+        else
+        {
+            (x as i32).wrapping_sub(1)
+        }
+    }
 
     fn dot(gradient: &[i32; 3], x: f64, y: f64) -> f64 { gradient[0] as f64 * x + gradient[1] as f64 * y }
 
@@ -82,7 +92,7 @@ impl NoiseGenerator2
                 let d5: f64 = (d0 + d1) * f2;
                 let l: i32 = Self::wrap(d0 + d5);
                 let i1: i32 = Self::wrap(d1 + d5);
-                let d6: f64 = (l + i1) as f64 * g2;
+                let d6: f64 = l.wrapping_add(i1) as f64 * g2;
                 let d7: f64 = l as f64 - d6;
                 let d8: f64 = i1 as f64 - d6;
                 let d9: f64 = d0 - d7;

@@ -1,11 +1,12 @@
 use crate::item::ItemStack;
 use crate::network::net_handler::NetHandler;
 use crate::network::packet::{self, Packet, PacketBase, PacketInput, PacketOutput};
+// item stacks cross the network threads as plain port data
 use crate::port::packet_item_stack::PacketItemStack;
 use jvm::io::IoResult;
 use std::rc::Rc;
 
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub struct Packet15Place
 {
     m_base: PacketBase,

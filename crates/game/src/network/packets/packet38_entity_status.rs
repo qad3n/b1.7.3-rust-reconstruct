@@ -2,12 +2,17 @@ use crate::network::net_handler::NetHandler;
 use crate::network::packet::{Packet, PacketBase, PacketInput, PacketOutput};
 use jvm::io::IoResult;
 
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub struct Packet38EntityStatus
 {
     m_base: PacketBase,
     pub m_entityId: i32,
     pub m_entityStatus: i8,
+}
+
+impl Packet38EntityStatus
+{
+    pub fn new(id: i32, event: i8) -> Self { Self { m_entityId: id, m_entityStatus: event, ..Self::default() } }
 }
 
 impl Packet for Packet38EntityStatus

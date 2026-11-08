@@ -3,6 +3,7 @@ use crate::block::map_color::MapColor;
 use crate::entity::Entity;
 use crate::item::{Item, ItemClass, ItemStack, MapData, item_map_base};
 use crate::math::math_helper;
+use crate::network::packets::Packet131MapData;
 use crate::world::{Chunk, MapDataBase, MapDataKind, World, WorldProvider};
 use jvm::throwable::OrNpe;
 use std::rc::Rc;
@@ -256,6 +257,14 @@ pub const CLASS: ItemClass = ItemClass {
         mapData.m_map.m_scale.set(3);
         mapData.m_map.m_dimension.set(world.worldProvider().m_worldType.get() as i8);
         mapData.markDirty();
+    },
+    getUpdatePacket: |_, stack, world, player| {
+        let byArray: Vec<i8> = getSavedMapData(stack, world).m_map.getUpdateData(stack, world, player)?;
+        Some(Box::new(Packet131MapData::new(
+            Item::mapItem().m_shiftedIndex as i16,
+            stack.getItemDamage() as i16,
+            byArray.into_iter().map(|value| value as u8).collect(),
+        )))
     },
     ..item_map_base::CLASS
 };

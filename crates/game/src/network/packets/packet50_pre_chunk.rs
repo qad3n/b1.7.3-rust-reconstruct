@@ -2,13 +2,21 @@ use crate::network::net_handler::NetHandler;
 use crate::network::packet::{self, Packet, PacketBase, PacketInput, PacketOutput};
 use jvm::io::IoResult;
 
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub struct Packet50PreChunk
 {
     m_base: PacketBase,
     pub m_xPosition: i32,
     pub m_yPosition: i32,
     pub m_mode: bool,
+}
+
+impl Packet50PreChunk
+{
+    pub fn new(chunkX: i32, chunkZ: i32, load: bool) -> Self
+    {
+        Self { m_xPosition: chunkX, m_yPosition: chunkZ, m_mode: load, ..Self::default() }
+    }
 }
 
 impl Packet for Packet50PreChunk

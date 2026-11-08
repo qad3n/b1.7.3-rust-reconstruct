@@ -6,7 +6,7 @@ use jvm::io::IoResult;
 use jvm::throwable::OrNpe;
 use std::cell::RefCell;
 
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub struct Packet60Explosion
 {
     m_base: PacketBase,
@@ -15,6 +15,21 @@ pub struct Packet60Explosion
     pub m_explosionZ: f64,
     pub m_explosionSize: f32,
     pub m_destroyedBlockPositions: RefCell<Option<JHashSet<ChunkPosition>>>,
+}
+
+impl Packet60Explosion
+{
+    pub fn new(x: f64, y: f64, z: f64, power: f32, damagedBlocks: &JHashSet<ChunkPosition>) -> Self
+    {
+        Self {
+            m_explosionX: x,
+            m_explosionY: y,
+            m_explosionZ: z,
+            m_explosionSize: power,
+            m_destroyedBlockPositions: RefCell::new(Some(JHashSet::copyOf(damagedBlocks))),
+            ..Self::default()
+        }
+    }
 }
 
 impl Packet for Packet60Explosion

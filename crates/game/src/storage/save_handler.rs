@@ -1,10 +1,14 @@
-use crate::entity::Entity;
+use crate::entity::{Entity, entity_player};
+// java.io.File calls are port stand-ins
 use crate::port::file;
+use crate::storage::IPlayerFileData;
 use crate::storage::chunk_loader::{ChunkLoader, catchException};
 use crate::world::{IChunkLoader, ISaveHandler, WorldInfo, WorldProvider};
 use common::nbt::{CompressedStreamTools, NBTBase, NBTTagCompound};
 use common::world::MINECRAFT_EXCEPTION;
 use jvm::io::{DataInputStream, DataOutputStream, FileInputStream, FileOutputStream, InputStream, IoResult};
+use jvm::logging::Logger;
+use jvm::string::JString;
 use jvm::throwable;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
@@ -12,6 +16,7 @@ use std::rc::Rc;
 pub struct SaveHandler
 {
     m_saveDirectory: PathBuf,
+    m_playersDirectory: PathBuf,
     m_dataDir: PathBuf,
     m_now: i64,
 }
@@ -52,7 +57,12 @@ impl SaveHandler
         {
             file::mkdirs(&playersDirectory);
         }
-        let handler: SaveHandler = SaveHandler { m_saveDirectory: saveDirectory, m_dataDir: dataDir, m_now: now };
+        let handler: SaveHandler = SaveHandler {
+            m_saveDirectory: saveDirectory,
+            m_playersDirectory: playersDirectory,
+            m_dataDir: dataDir,
+            m_now: now,
+        };
         handler.writeSessionLock();
         handler
     }
@@ -76,6 +86,28 @@ impl SaveHandler
     }
 
     pub fn getSaveDirectory(&self) -> &Path { &self.m_saveDirectory }
+
+    pub fn getPlayerData(&self, playerName: Option<&JString>) -> Option<Rc<NBTBase>>
+    {
+        let result: Result<IoResult<Option<Rc<NBTBase>>>, throwable::Throwable> =
+            throwable::catchThrowable(&throwable::EXCEPTION, || {
+                let file1: PathBuf = self.m_playersDirectory.join(format!("{}.dat", JString::display(playerName)));
+                if file::exists(&file1)
+                {
+                    return Ok(Some(CompressedStreamTools::readCompressed(FileInputStream::open(&file1)?)?));
+                }
+                Ok(None)
+            });
+        match result.and_then(|inner| inner)
+        {
+            Ok(Some(nbt)) => return Some(nbt),
+            Ok(None) =>
+            {}
+            Err(_) => Logger::getLogger("Minecraft")
+                .warning(&format!("Failed to load player data for {}", JString::display(playerName))),
+        }
+        None
+    }
 
     fn writeLevel(&self, nbttagcompound: Rc<NBTBase>)
     {
@@ -150,5 +182,52 @@ impl ISaveHandler for SaveHandler
 
     fn saveWorldInfo(&self, info: &Rc<WorldInfo>) { self.writeLevel(info.getNBTTagCompound()); }
 
+    fn getPlayerDataStorage(self: Rc<Self>) -> Rc<dyn IPlayerFileData> { self }
+
+    fn forceSave(&self) {}
+
     fn getDataFile(&self, name: &str) -> Option<PathBuf> { Some(self.m_dataDir.join(format!("{name}.dat"))) }
+}
+
+impl IPlayerFileData for SaveHandler
+{
+    fn writePlayerData(&self, player: &Rc<Entity>)
+    {
+        let result: Result<IoResult<()>, throwable::Throwable> =
+            throwable::catchThrowable(&throwable::EXCEPTION, || {
+                let nbttagcompound: Rc<NBTBase> = NBTTagCompound::create();
+                player.writeToNBT(nbttagcompound.compound());
+                let file1: PathBuf = self.m_playersDirectory.join("_tmp_.dat");
+                let file2: PathBuf = self
+                    .m_playersDirectory
+                    .join(format!("{}.dat", JString::display(entity_player::fields(player).m_username.get().as_ref())));
+                CompressedStreamTools::writeGzippedCompoundToOutputStream(
+                    &nbttagcompound,
+                    FileOutputStream::create(&file1, false)?,
+                )?;
+                if file::exists(&file2)
+                {
+                    file::delete(&file2);
+                }
+                file::renameTo(&file1, &file2);
+                Ok(())
+            });
+        if result.and_then(|inner| inner).is_err()
+        {
+            Logger::getLogger("Minecraft").warning(&format!(
+                "Failed to save player data for {}",
+                JString::display(entity_player::fields(player).m_username.get().as_ref())
+            ));
+        }
+    }
+
+    fn readPlayerData(&self, player: &Rc<Entity>)
+    {
+        let nbttagcompound: Option<Rc<NBTBase>> =
+            self.getPlayerData(entity_player::fields(player).m_username.get().as_ref());
+        if let Some(nbttagcompound) = nbttagcompound
+        {
+            player.readFromNBT(nbttagcompound.compound());
+        }
+    }
 }

@@ -20,7 +20,6 @@ pub enum NBTTag
     Compound(NBTTagCompound),
 }
 
-// every java tag is a shared mutable object, setKey renames the instance a compound already holds
 pub struct NBTBase
 {
     m_key: Field<Option<JString>>,
@@ -119,12 +118,10 @@ impl NBTBase
             return Ok(NBTTagEnd::create());
         }
 
-        let nbtBase: Rc<Self> = match Self::createTagOfType(by)
-        {
-            Some(tag) => tag,
-            None => throwable::npe(),
-        };
-        nbtBase.m_key.set(Some(input.readUTF()?));
+        let nbtBase: Option<Rc<Self>> = Self::createTagOfType(by);
+        let key: JString = input.readUTF()?;
+        let nbtBase: Rc<Self> = nbtBase.unwrap_or_else(|| throwable::npe());
+        nbtBase.m_key.set(Some(key));
         nbtBase.readTagContents(input)?;
         Ok(nbtBase)
     }

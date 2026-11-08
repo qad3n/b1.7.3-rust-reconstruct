@@ -83,6 +83,7 @@ impl Packet for Packet10Flying
     fn getPacketSize(&self) -> i32 { 1 }
 }
 
+#[derive(Clone)]
 pub struct Packet11PlayerPosition
 {
     pub m_flying: Packet10Flying,
@@ -132,6 +133,7 @@ impl Packet for Packet11PlayerPosition
     fn getPacketSize(&self) -> i32 { 33 }
 }
 
+#[derive(Clone)]
 pub struct Packet13PlayerLookMove
 {
     pub m_flying: Packet10Flying,
@@ -189,6 +191,7 @@ impl Packet for Packet13PlayerLookMove
     fn getPacketSize(&self) -> i32 { 41 }
 }
 
+#[derive(Clone)]
 pub struct Packet12PlayerLook
 {
     pub m_flying: Packet10Flying,

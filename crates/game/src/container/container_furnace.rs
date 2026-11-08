@@ -17,6 +17,15 @@ pub struct FurnaceExt
 
 fn fields(this: &Container) -> &FurnaceExt { this.ext::<FurnaceExt>() }
 
+fn onCraftGuiOpened(this: &Rc<Container>, listener: &Rc<dyn ICrafting>)
+{
+    (CONTAINER.onCraftGuiOpened)(this, listener);
+    let furnace: &tile_entity_furnace::FurnaceExt = tile_entity_furnace::fields(&fields(this).m_furnace);
+    listener.onDataChanged(this, 0, furnace.m_furnaceCookTime.get());
+    listener.onDataChanged(this, 1, furnace.m_furnaceBurnTime.get());
+    listener.onDataChanged(this, 2, furnace.m_currentItemBurnTime.get());
+}
+
 fn updateCraftingResults(this: &Rc<Container>)
 {
     (CONTAINER.updateCraftingResults)(this);
@@ -95,6 +104,7 @@ pub const CLASS: ContainerClass = ContainerClass {
     m_interfaces: &[],
     getStackInSlot,
     isUsableByPlayer,
+    onCraftGuiOpened,
     setData,
     updateCraftingResults,
     ..CONTAINER

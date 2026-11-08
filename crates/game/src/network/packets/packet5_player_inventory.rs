@@ -1,8 +1,10 @@
+use crate::item::ItemStack;
 use crate::network::net_handler::NetHandler;
 use crate::network::packet::{Packet, PacketBase, PacketInput, PacketOutput};
 use jvm::io::IoResult;
+use std::rc::Rc;
 
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub struct Packet5PlayerInventory
 {
     m_base: PacketBase,
@@ -10,6 +12,28 @@ pub struct Packet5PlayerInventory
     pub m_slot: i32,
     pub m_itemID: i32,
     pub m_itemDamage: i32,
+}
+
+impl Packet5PlayerInventory
+{
+    pub fn new(id: i32, slot: i32, item: Option<&Rc<ItemStack>>) -> Self
+    {
+        let mut packet: Self = Self { m_entityID: id, m_slot: slot, ..Self::default() };
+        match item
+        {
+            None =>
+            {
+                packet.m_itemID = -1;
+                packet.m_itemDamage = 0;
+            }
+            Some(item) =>
+            {
+                packet.m_itemID = item.m_itemID.get();
+                packet.m_itemDamage = item.getItemDamage();
+            }
+        }
+        packet
+    }
 }
 
 impl Packet for Packet5PlayerInventory

@@ -112,12 +112,14 @@ pub fn attackEntityFrom(this: &Rc<Entity>, source: Option<&Rc<Entity>>, amount: 
     {
         if flag
         {
+            // java may pass a null sound name so the port wrapper plays nothing for it
             playSoundAtEntity(&world, this, this.getDeathSound(), this.getSoundVolume(), randomPitch(this));
         }
         this.onDeath(source);
     }
     else if flag
     {
+        // java may pass a null sound name so the port wrapper plays nothing for it
         playSoundAtEntity(&world, this, this.getHurtSound(), this.getSoundVolume(), randomPitch(this));
     }
     true
@@ -206,11 +208,13 @@ pub fn handleHealthUpdate(this: &Rc<Entity>, event: i8)
         living.m_maxHurtTime.set(10);
         living.m_hurtTime.set(10);
         living.m_attackedAtYaw.set(0.0);
+        // java may pass a null sound name so the port wrapper plays nothing for it
         playSoundAtEntity(&world, this, this.getHurtSound(), this.getSoundVolume(), randomPitch(this));
         this.attackEntityFrom(None, 0);
     }
     else if event == 3
     {
+        // java may pass a null sound name so the port wrapper plays nothing for it
         playSoundAtEntity(&world, this, this.getDeathSound(), this.getSoundVolume(), randomPitch(this));
         living.m_health.set(0);
         this.onDeath(None);

@@ -27,6 +27,39 @@ impl JString
         self.m_chars[index as usize]
     }
 
+    pub fn indexOf(&self, ch: u16) -> i32
+    {
+        self.m_chars.iter().position(|&unit| unit == ch).map_or(-1, |index| index as i32)
+    }
+
+    pub fn indexOfStr(&self, text: &str) -> i32
+    {
+        let needle: Vec<u16> = text.encode_utf16().collect();
+        if needle.is_empty()
+        {
+            return 0;
+        }
+        self.m_chars
+            .windows(needle.len())
+            .position(|window| window == needle.as_slice())
+            .map_or(-1, |index| index as i32)
+    }
+
+    pub fn startsWith(&self, prefix: &str) -> bool
+    {
+        let prefix: Vec<u16> = prefix.encode_utf16().collect();
+        self.m_chars.starts_with(&prefix)
+    }
+
+    pub fn substringFrom(&self, begin: i32) -> JString { self.substring(begin, self.length()) }
+
+    pub fn trim(&self) -> JString
+    {
+        let start: usize = self.m_chars.iter().position(|&c| c > 0x20).unwrap_or(self.m_chars.len());
+        let end: usize = self.m_chars.iter().rposition(|&c| c > 0x20).map_or(start, |index| index + 1);
+        JString::fromUtf16(self.m_chars[start..end].to_vec())
+    }
+
     pub fn hashCode(&self) -> i32
     {
         let mut hash: i32 = 0;

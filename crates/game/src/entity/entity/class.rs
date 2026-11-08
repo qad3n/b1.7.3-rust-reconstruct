@@ -1,10 +1,12 @@
 use super::{movement, riding, update};
 use crate::entity::Entity;
+use crate::entity::entity_player::EnumStatus;
 use crate::inventory::IInventory;
 use crate::item::ItemStack;
 use crate::math::{AxisAlignedBB, Vec3D};
 use crate::stats::StatBase;
 use crate::tileentity::TileEntity;
+use crate::world::World;
 use common::nbt::NBTTagCompound;
 use jvm::string::JString;
 use std::rc::Rc;
@@ -27,6 +29,7 @@ crate::vtable! {
         fn getEntityBrightness(tickDelta: f32) -> f32;
         fn getEntityTexture() -> Option<JString>;
         fn getEyeHeight() -> f32;
+        fn getInventory() -> Option<Vec<Option<Rc<ItemStack>>>>;
         fn getLookVec() -> Option<Rc<Vec3D>>;
         fn getMountedYOffset() -> f64;
         fn getShadowSize() -> f32;
@@ -61,6 +64,9 @@ crate::vtable! {
         fn updateRidden();
         fn updateRiderPosition();
         fn writeEntityToNBT(nbt: &NBTTagCompound);
+        fn mountEntity(entity: Option<&Rc<Entity>>);
+        fn setWorld(world: Option<Rc<World>>);
+        fn updateFallState(dy: f64, onGround: bool);
         fn addChatMessage(message: &str);
         fn addRespawnParticles();
         fn addStat(stat: Option<&Rc<StatBase>>, amount: i32);
@@ -100,24 +106,36 @@ crate::vtable! {
         fn moveEntityWithHeading(strafe: f32, forward: f32);
         fn onDeath(killer: Option<&Rc<Entity>>);
         fn onItemPickup(item: &Rc<Entity>, count: i32);
+        fn onItemStackChanged(item: Option<Rc<ItemStack>>);
         fn onLivingUpdate();
+        fn pvpEnabled() -> bool;
         fn renderParticle(tessellator: &dyn std::any::Any, tickDelta: f32, rotationX: f32, rotationXZ: f32, rotationZ: f32, rotationYZ: f32, rotationXY: f32);
         fn resetHeight();
         fn respawnPlayer();
         fn sendChatMessage(message: &str);
         fn setHealth(health: i32);
+        fn sleepInBedAt(x: i32, y: i32, z: i32) -> EnumStatus;
         fn swingItem();
         fn updatePlayerActionState();
         fn verticleLookSpeed() -> i32;
+        fn wakeUpPlayer(resetSleepTimer: bool, updateAllPlayersSleeping: bool, setSpawnPoint: bool);
     }
 }
 
 use crate::port::abstractMethod;
 
+// abstract java methods get a slot that throws the AbstractMethodError java would
 pub const ENTITY: EntityClass = EntityClass {
     m_name: "Entity",
     m_parent: None,
     m_interfaces: &[],
+    mountEntity: super::riding::mountEntity,
+    setWorld: super::setWorld,
+    updateFallState: movement::updateFallState,
+    onItemStackChanged: |_, _| abstractMethod("onItemStackChanged"),
+    pvpEnabled: |_| abstractMethod("pvpEnabled"),
+    sleepInBedAt: |_, _, _, _| abstractMethod("sleepInBedAt"),
+    wakeUpPlayer: |_, _, _, _| abstractMethod("wakeUpPlayer"),
     addChatMessage: |_, _| abstractMethod("addChatMessage"),
     addRespawnParticles: |_| abstractMethod("addRespawnParticles"),
     addStat: |_, _, _| abstractMethod("addStat"),
@@ -181,6 +199,7 @@ pub const ENTITY: EntityClass = EntityClass {
     getCollisionBox: |_, _| None,
     getEntityBrightness: update::getEntityBrightness,
     getEntityTexture: |_| None,
+    getInventory: |_| None,
     getEyeHeight: |_| 0.0,
     getLookVec: |_| None,
     getMountedYOffset: riding::getMountedYOffset,

@@ -14,6 +14,8 @@ use crate::item::ItemStack;
 pub use container_player as ContainerPlayer;
 pub use i_crafting::ICrafting;
 use jvm::array_list::JArrayList;
+use jvm::field::Field;
+use jvm::hash_map::JHashSet;
 use jvm::throwable::OrNpe;
 pub use slot::Slot;
 use std::any::Any;
@@ -26,6 +28,7 @@ crate::vtable! {
     ContainerClass for Container {
         fn getStackInSlot(slot: i32) -> Option<Rc<ItemStack>>;
         fn isUsableByPlayer(player: &Rc<Entity>) -> bool;
+        fn onCraftGuiOpened(listener: &Rc<dyn ICrafting>);
         fn onCraftGuiClosed(player: &Rc<Entity>);
         fn onCraftMatrixChanged(inventory: &dyn IInventory);
         fn setData(id: i32, value: i32);
@@ -55,6 +58,17 @@ fn updateCraftingResults(this: &Rc<Container>)
     }
 }
 
+fn onCraftGuiOpened(this: &Rc<Container>, listener: &Rc<dyn ICrafting>)
+{
+    if this.m_listeners.contains(listener)
+    {
+        jvm::throwable::throw(&jvm::throwable::ILLEGAL_ARGUMENT, "Listener already listening");
+    }
+    this.m_listeners.add(Rc::clone(listener));
+    listener.updateCraftingInventory(this, &this.getItems());
+    this.updateCraftingResults();
+}
+
 fn onCraftGuiClosed(_this: &Rc<Container>, player: &Rc<Entity>)
 {
     let inventoryplayer: Rc<InventoryPlayer> = entity_player::inventory(player);
@@ -71,6 +85,7 @@ pub const CONTAINER: ContainerClass = ContainerClass {
     m_interfaces: &[],
     getStackInSlot: |this, slot| this.m_slots.get(slot).getStack(),
     isUsableByPlayer: |_, _| unreachable!("Container is abstract"),
+    onCraftGuiOpened,
     onCraftGuiClosed,
     onCraftMatrixChanged: |this, _| this.updateCraftingResults(),
     setData: |_, _, _| {},
@@ -85,6 +100,7 @@ pub struct Container
     pub m_windowId: Cell<i32>,
     m_nextInteractionId: Cell<i16>,
     m_listeners: JArrayList<Rc<dyn ICrafting>>,
+    m_restrictedPlayers: Field<JHashSet<Rc<Entity>>>,
     m_ext: Box<dyn Any>,
 }
 
@@ -102,6 +118,7 @@ impl Container
             m_windowId: Cell::new(0),
             m_nextInteractionId: Cell::new(0),
             m_listeners: JArrayList::new(),
+            m_restrictedPlayers: Field::new(JHashSet::new()),
             m_ext: ext(this),
         })
     }
@@ -113,6 +130,33 @@ impl Container
         slot.m_slotNumber.set(self.m_slots.size());
         self.m_slots.add(slot);
         self.m_items.add(None);
+    }
+
+    pub fn getItems(&self) -> Vec<Option<Rc<ItemStack>>>
+    {
+        let mut arraylist: Vec<Option<Rc<ItemStack>>> = Vec::new();
+        let mut i: i32 = 0;
+        while i < self.m_slots.size()
+        {
+            arraylist.push(self.m_slots.get(i).getStack());
+            i += 1;
+        }
+        arraylist
+    }
+
+    pub fn getSlotFor(&self, inventory: &Rc<dyn IInventory>, slot: i32) -> Option<Rc<Slot>>
+    {
+        let mut i: i32 = 0;
+        while i < self.m_slots.size()
+        {
+            let slotx: Rc<Slot> = self.m_slots.get(i);
+            if slotx.isHere(inventory, slot)
+            {
+                return Some(slotx);
+            }
+            i += 1;
+        }
+        None
     }
 
     pub fn getSlot(&self, slot: i32) -> Rc<Slot> { self.m_slots.get(slot) }
@@ -307,6 +351,23 @@ impl Container
                 }
                 slot1.onPickupFromSlot(inventoryplayer.getItemStack());
             }
+        }
+    }
+
+    pub fn getCanCraft(&self, player: &Rc<Entity>) -> bool
+    {
+        !self.m_restrictedPlayers.with(|set| set.contains(player))
+    }
+
+    pub fn setCanCraft(&self, player: &Rc<Entity>, synced: bool)
+    {
+        if synced
+        {
+            self.m_restrictedPlayers.update(|set| set.remove(player));
+        }
+        else
+        {
+            self.m_restrictedPlayers.update(|set| set.add(Rc::clone(player)));
         }
     }
 

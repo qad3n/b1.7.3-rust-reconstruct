@@ -1,6 +1,6 @@
 use crate::nbt::NBTBase;
 use jvm::io::{DataInputStream, DataOutputStream, InputStream, IoResult, OutputStream};
-use jvm::throwable;
+use jvm::throwable::{self, Throwable};
 use jvm::zip::{GZIPInputStream, GZIPOutputStream};
 use std::rc::Rc;
 
@@ -12,21 +12,20 @@ impl CompressedStreamTools
     {
         let mut datainputstream: DataInputStream<GZIPInputStream<S>> =
             DataInputStream::new(GZIPInputStream::new(input)?);
-        let result: IoResult<Rc<NBTBase>> = Self::read(&mut datainputstream);
-        let closed: IoResult<()> = datainputstream.m_in.close();
-        let tag: Rc<NBTBase> = result?;
-        closed?;
-        Ok(tag)
+        let result: Result<IoResult<Rc<NBTBase>>, Throwable> =
+            throwable::catchThrowable(&throwable::THROWABLE, || Self::read(&mut datainputstream));
+        datainputstream.m_in.close()?;
+        result.unwrap_or_else(|thrown| throwable::rethrow(thrown))
     }
 
     pub fn writeGzippedCompoundToOutputStream<S: OutputStream>(nbt: &Rc<NBTBase>, output: S) -> IoResult<()>
     {
         let mut dataoutputstream: DataOutputStream<GZIPOutputStream<S>> =
             DataOutputStream::new(GZIPOutputStream::new(output)?);
-        let result: IoResult<()> = Self::write(nbt, &mut dataoutputstream);
-        let closed: IoResult<()> = dataoutputstream.close();
-        result?;
-        closed
+        let result: Result<IoResult<()>, Throwable> =
+            throwable::catchThrowable(&throwable::THROWABLE, || Self::write(nbt, &mut dataoutputstream));
+        dataoutputstream.close()?;
+        result.unwrap_or_else(|thrown| throwable::rethrow(thrown))
     }
 
     pub fn read<S: InputStream>(input: &mut DataInputStream<S>) -> IoResult<Rc<NBTBase>>

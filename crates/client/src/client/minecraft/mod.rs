@@ -152,6 +152,7 @@ impl Minecraft
             m_displayWidth: Cell::new(0),
             m_displayHeight: Cell::new(0),
             m_glCapabilities: Field::new(None),
+            // the windows timer resolution thread is left out because it only sleeps
             m_timer: Field::new(Some(Rc::new(Timer::new(20.0)))),
             m_theWorld: Field::new(None),
             m_renderGlobal: Field::new(None),

@@ -1,3 +1,4 @@
+use crate::network::packets::Packet130UpdateSign;
 use crate::tileentity::{TILE_ENTITY, TileEntity, TileEntityClass};
 use jvm::field::Field;
 use jvm::string::JString;
@@ -39,8 +40,21 @@ pub const CLASS: TileEntityClass = TileEntityClass {
             sign.m_signText.update(|lines| lines[i] = line);
         }
     },
+    getDescriptionPacket: |this| {
+        let mut astring: Vec<Option<JString>> = vec![None; 4];
+        let text: [Option<JString>; 4] = fields(this).m_signText.get();
+        for i in 0..4
+        {
+            astring[i] = text[i].clone();
+        }
+        Some(Box::new(Packet130UpdateSign::new(this.m_xCoord.get(), this.m_yCoord.get(), this.m_zCoord.get(), astring)))
+    },
     ..TILE_ENTITY
 };
+
+pub fn getIsEditAble(this: &TileEntity) -> bool { fields(this).m_editable.get() }
+
+pub fn setEditable(this: &TileEntity, editable: bool) { fields(this).m_editable.set(editable); }
 
 pub fn create() -> Rc<TileEntity>
 {

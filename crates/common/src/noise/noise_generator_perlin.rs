@@ -45,15 +45,15 @@ impl NoiseGeneratorPerlin
         let mut n6: i32 = n3 as i32;
         if n < n4 as f64
         {
-            n4 -= 1;
+            n4 = n4.wrapping_sub(1);
         }
         if n2 < n5 as f64
         {
-            n5 -= 1;
+            n5 = n5.wrapping_sub(1);
         }
         if n3 < n6 as f64
         {
-            n6 -= 1;
+            n6 = n6.wrapping_sub(1);
         }
         let n7: i32 = n4 & 0xFF;
         let n8: i32 = n5 & 0xFF;
@@ -164,7 +164,7 @@ impl NoiseGeneratorPerlin
                 let mut n4: i32 = n3 as i32;
                 if n3 < n4 as f64
                 {
-                    n4 -= 1;
+                    n4 = n4.wrapping_sub(1);
                 }
                 let n5: i32 = n4 & 0xFF;
                 let n6: f64 = n3 - n4 as f64;
@@ -175,7 +175,7 @@ impl NoiseGeneratorPerlin
                     let mut n9: i32 = n8 as i32;
                     if n8 < n9 as f64
                     {
-                        n9 -= 1;
+                        n9 = n9.wrapping_sub(1);
                     }
                     let n10: i32 = n9 & 0xFF;
                     let n11: f64 = n8 - n9 as f64;
@@ -215,7 +215,7 @@ impl NoiseGeneratorPerlin
             let mut n19: i32 = n18 as i32;
             if n18 < n19 as f64
             {
-                n19 -= 1;
+                n19 = n19.wrapping_sub(1);
             }
             let n20: i32 = n19 & 0xFF;
             let n21: f64 = n18 - n19 as f64;
@@ -226,7 +226,7 @@ impl NoiseGeneratorPerlin
                 let mut n24: i32 = n23 as i32;
                 if n23 < n24 as f64
                 {
-                    n24 -= 1;
+                    n24 = n24.wrapping_sub(1);
                 }
                 let n25: i32 = n24 & 0xFF;
                 let n26: f64 = n23 - n24 as f64;
@@ -237,7 +237,7 @@ impl NoiseGeneratorPerlin
                     let mut n29: i32 = n28 as i32;
                     if n28 < n29 as f64
                     {
-                        n29 -= 1;
+                        n29 = n29.wrapping_sub(1);
                     }
                     let n30: i32 = n29 & 0xFF;
                     let n31: f64 = n28 - n29 as f64;

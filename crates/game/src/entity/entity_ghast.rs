@@ -187,7 +187,7 @@ fn updatePlayerActionState(this: &Rc<Entity>)
 pub const CLASS: EntityClass = EntityClass {
     m_name: "EntityGhast",
     m_parent: Some(&entity_flying::CLASS),
-    m_interfaces: &["IMob"],
+    m_interfaces: &["IMob", "IAnimals"],
     entityInit: |this| {
         (entity_flying::CLASS.entityInit)(this);
         this.m_dataWatcher.addObject(16, WatchedValue::Byte(0));

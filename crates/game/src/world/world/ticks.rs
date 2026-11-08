@@ -235,3 +235,22 @@ impl World
         }
     }
 }
+
+impl World
+{
+    pub fn changeTime(&self, time: i64)
+    {
+        let i: i64 = time - self.worldInfo().getWorldTime();
+        // the tree set holds the entries java shifts through the hash set, the hash set copies only key by position
+        self.m_scheduledTickTreeSet.update(|set| {
+            *set = std::mem::take(set)
+                .into_iter()
+                .map(|mut nextticklistentry| {
+                    nextticklistentry.m_scheduledTime += i;
+                    nextticklistentry
+                })
+                .collect();
+        });
+        self.setWorldTime(time);
+    }
+}

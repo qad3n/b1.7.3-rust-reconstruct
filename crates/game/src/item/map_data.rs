@@ -30,6 +30,7 @@ pub struct MapInfo
     pub m_dirtyMaxY: RefCell<[i32; 128]>,
     pub m_nextDirtyPixel: Cell<i32>,
     pub m_cooldown: Cell<i32>,
+    m_decorations: RefCell<Option<Vec<i8>>>,
 }
 
 impl MapInfo
@@ -42,7 +43,78 @@ impl MapInfo
             m_dirtyMaxY: RefCell::new([127; 128]),
             m_nextDirtyPixel: Cell::new(0),
             m_cooldown: Cell::new(0),
+            m_decorations: RefCell::new(None),
         })
+    }
+
+    pub fn getUpdateData(&self, _item: &Rc<ItemStack>, outer: &MapData) -> Option<Vec<i8>>
+    {
+        let mut n: i32;
+        self.m_cooldown.set(self.m_cooldown.get() - 1);
+        if self.m_cooldown.get() < 0
+        {
+            self.m_cooldown.set(4);
+            let decorations: Vec<MapCoord> = outer.m_decorations.borrow().clone();
+            let mut byArray: Vec<i8> = vec![0; decorations.len() * 3 + 1];
+            byArray[0] = 1;
+            n = 0;
+            while (n as usize) < decorations.len()
+            {
+                let mapCoord: MapCoord = decorations[n as usize];
+                byArray[(n * 3 + 1) as usize] =
+                    (mapCoord.m_type as i32 + (mapCoord.m_rotation as i32 & 0xF) * 16) as i8;
+                byArray[(n * 3 + 2) as usize] = mapCoord.m_x;
+                byArray[(n * 3 + 3) as usize] = mapCoord.m_z;
+                n += 1;
+            }
+            n = 1;
+            match &*self.m_decorations.borrow()
+            {
+                Some(previous) if previous.len() == byArray.len() =>
+                {
+                    for i in 0..byArray.len()
+                    {
+                        if byArray[i] == previous[i]
+                        {
+                            continue;
+                        }
+                        n = 0;
+                        break;
+                    }
+                }
+                _ => n = 0,
+            }
+            if n == 0
+            {
+                *self.m_decorations.borrow_mut() = Some(byArray.clone());
+                return Some(byArray);
+            }
+        }
+        for _ in 0..10
+        {
+            n = self.m_nextDirtyPixel.get().wrapping_mul(11) % 128;
+            self.m_nextDirtyPixel.set(self.m_nextDirtyPixel.get() + 1);
+            let column: usize = n as usize;
+            if self.m_dirtyMinY.borrow()[column] < 0
+            {
+                continue;
+            }
+            let n2: i32 = self.m_dirtyMaxY.borrow()[column] - self.m_dirtyMinY.borrow()[column] + 1;
+            let n3: i32 = self.m_dirtyMinY.borrow()[column];
+            let mut byArray: Vec<i8> = vec![0; (n2 + 3) as usize];
+            byArray[0] = 0;
+            byArray[1] = n as i8;
+            byArray[2] = n3 as i8;
+            let colors: std::cell::Ref<'_, Vec<i8>> = outer.m_colors.borrow();
+            for j in 0..byArray.len() - 3
+            {
+                byArray[j + 3] = colors[((j as i32 + n3) * 128 + n) as usize];
+            }
+            self.m_dirtyMaxY.borrow_mut()[column] = -1;
+            self.m_dirtyMinY.borrow_mut()[column] = -1;
+            return Some(byArray);
+        }
+        None
     }
 }
 
@@ -174,6 +246,18 @@ impl MapData
             }
             self.m_decorations.borrow_mut().push(MapCoord::new(by, by2, by3, by4));
         }
+    }
+
+    pub fn getUpdateData(
+        &self,
+        item: &Rc<ItemStack>,
+        _world: &Rc<crate::world::World>,
+        player: &Rc<Entity>,
+    ) -> Option<Vec<i8>>
+    {
+        let mapInfo: Option<Rc<MapInfo>> = self.m_holdersByPlayer.borrow().get(&player.m_entityId.get()).cloned();
+        let mapInfo: Rc<MapInfo> = mapInfo?;
+        mapInfo.getUpdateData(item, self)
     }
 
     pub fn markDirtyColumn(&self, base: &crate::world::MapDataBase, index: i32, minY: i32, maxY: i32)

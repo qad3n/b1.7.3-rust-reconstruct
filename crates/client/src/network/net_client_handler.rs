@@ -2,6 +2,7 @@ use crate::client::Minecraft;
 use crate::controller::player_controller_mp;
 use crate::entity::{entity_client_player_mp, entity_other_player_mp};
 use crate::gui::{GuiConnectFailed, GuiDownloadTerrain};
+// the java (EntityPlayer) cast is checked in port
 use crate::port::network::castToPlayer;
 use crate::render::particle::entity_pickup_fx;
 use crate::world::world_client;
@@ -19,6 +20,7 @@ use game::network::net_handler::NetHandler;
 use game::network::network_manager::NetworkManager;
 use game::network::packet::Packet;
 use game::network::packets::*;
+// item stacks cross the network threads as plain port data
 use game::port::packet_item_stack::PacketItemStack;
 use game::stats::StatList;
 use game::storage::SaveHandlerMP;
@@ -613,7 +615,7 @@ impl NetHandler for NetClientHandler
             3 =>
             {
                 castToPlayer(&entity);
-                entity_player::wakeUpPlayer(&entity, false, false, false);
+                entity.wakeUpPlayer(false, false, false);
             }
             4 =>
             {
@@ -635,7 +637,7 @@ impl NetHandler for NetClientHandler
         if packet.m_action == 0
         {
             castToPlayer(&entity);
-            entity_player::sleepInBedAt(&entity, packet.m_x, packet.m_y, packet.m_z);
+            entity.sleepInBedAt(packet.m_x, packet.m_y, packet.m_z);
         }
     }
 

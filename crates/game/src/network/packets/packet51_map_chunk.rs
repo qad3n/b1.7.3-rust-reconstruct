@@ -1,9 +1,12 @@
 use crate::network::net_handler::NetHandler;
 use crate::network::packet::{self, Packet, PacketBase, PacketInput, PacketOutput};
+use crate::world::World;
 use jvm::io::{IoResult, ioError};
 use jvm::throwable::{IO, OrNpe};
-use jvm::zip::{DATA_FORMAT, Inflater};
+use jvm::zip::{DATA_FORMAT, Deflater, Inflater};
+use std::rc::Rc;
 
+#[derive(Clone)]
 pub struct Packet51MapChunk
 {
     m_base: PacketBase,
@@ -42,6 +45,32 @@ fn newByteArray(length: i32) -> Vec<u8>
         jvm::throwable::throwBare(&jvm::throwable::NEGATIVE_ARRAY_SIZE);
     }
     vec![0; length as usize]
+}
+
+impl Packet51MapChunk
+{
+    pub fn new(minX: i32, minY: i32, minZ: i32, widthX: i32, height: i32, widthZ: i32, world: &Rc<World>) -> Self
+    {
+        let mut packet: Self = Self {
+            m_xPosition: minX,
+            m_yPosition: minY,
+            m_zPosition: minZ,
+            m_xSize: widthX,
+            m_ySize: height,
+            m_zSize: widthZ,
+            ..Self::default()
+        };
+        let byArray: Vec<u8> =
+            world.getChunkData(minX, minY, minZ, widthX, height, widthZ).into_iter().map(|value| value as u8).collect();
+        let mut deflater: Deflater = Deflater::new(-1);
+        deflater.setInput(&byArray);
+        deflater.finish();
+        let mut chunk: Vec<u8> = newByteArray(widthX * height * widthZ * 5 / 2);
+        packet.m_chunkSize = deflater.deflate(&mut chunk);
+        packet.m_chunk = Some(chunk);
+        deflater.end();
+        packet
+    }
 }
 
 impl Packet for Packet51MapChunk

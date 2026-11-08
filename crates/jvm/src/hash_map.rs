@@ -5,6 +5,7 @@ const DEFAULT_INITIAL_CAPACITY: usize = 16;
 const MAXIMUM_CAPACITY: usize = 1 << 30;
 const DEFAULT_LOAD_FACTOR: f32 = 0.75;
 
+#[derive(Clone)]
 struct Entry<K, V>
 {
     m_hash: i32,
@@ -14,6 +15,7 @@ struct Entry<K, V>
 }
 
 // java.util.HashMap of jdk 6: same bucket spread, head insertion, resize order and iteration order
+#[derive(Clone)]
 pub struct JHashMap<K, V>
 {
     m_table: Vec<Option<usize>>,
@@ -317,6 +319,7 @@ impl HashCursor
 }
 
 // java.util.HashSet is a HashMap with a shared present value
+#[derive(Clone)]
 pub struct JHashSet<K>
 {
     m_map: JHashMap<K, ()>,
@@ -325,6 +328,16 @@ pub struct JHashSet<K>
 impl<K: JavaObject + Clone> JHashSet<K>
 {
     pub fn new() -> Self { Self { m_map: JHashMap::new() } }
+
+    pub fn copyOf(source: &JHashSet<K>) -> Self
+    {
+        let mut set: Self = Self { m_map: JHashMap::withCapacity(((source.size() as f32 / 0.75) as i32 + 1).max(16)) };
+        for key in source.items()
+        {
+            set.add(key);
+        }
+        set
+    }
 
     pub fn size(&self) -> i32 { self.m_map.size() }
 

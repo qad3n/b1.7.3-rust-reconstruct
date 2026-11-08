@@ -1,11 +1,12 @@
 use crate::network::net_handler::NetHandler;
 use crate::network::packet::{self, Packet, PacketBase, PacketInput, PacketOutput};
+// string length of a field java dereferences without a null check comes from port
 use crate::port::network;
 use jvm::io::IoResult;
 use jvm::string::JString;
 use jvm::throwable::OrNpe;
 
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub struct Packet1Login
 {
     m_base: PacketBase,
@@ -17,6 +18,11 @@ pub struct Packet1Login
 
 impl Packet1Login
 {
+    pub fn withSeed(username: Option<JString>, id: i32, l: i64, dimensionId: i8) -> Self
+    {
+        Self { m_username: username, m_protocolVersion: id, m_mapSeed: l, m_dimension: dimensionId, ..Self::default() }
+    }
+
     pub fn new(username: JString, gameVersion: i32) -> Self
     {
         Self { m_username: Some(username), m_protocolVersion: gameVersion, ..Self::default() }

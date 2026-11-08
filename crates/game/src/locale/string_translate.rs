@@ -15,6 +15,7 @@ pub struct StringTranslate
 
 fn loadTable(table: &mut Properties, path: &str) -> jvm::io::IoResult<()>
 {
+    // class path resources load from the assets folder through port
     let mut stream: FileInputStream = crate::port::getResourceAsStream(path).orNpe();
     table.load(&mut stream)
 }

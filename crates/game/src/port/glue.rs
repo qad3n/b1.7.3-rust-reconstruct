@@ -3,13 +3,11 @@ use crate::world::World;
 use jvm::throwable::{self, CLASS_CAST};
 use std::rc::Rc;
 
-// the AbstractMethodError a call into an abstract java method throws
 pub fn abstractMethod(name: &str) -> !
 {
     throwable::throw(&throwable::ERROR, &format!("java.lang.AbstractMethodError: {name}"))
 }
 
-// java reference equality where either side may be null
 pub fn sameObject<T>(a: Option<&Rc<T>>, b: Option<&Rc<T>>) -> bool
 {
     match (a, b)
@@ -20,7 +18,6 @@ pub fn sameObject<T>(a: Option<&Rc<T>>, b: Option<&Rc<T>>) -> bool
     }
 }
 
-// the ClassCastException of a DataWatcher getter whose slot holds another boxed type
 pub fn watchedCastError(found: &WatchedValue, target: &str) -> !
 {
     let name: &str = match found
@@ -36,8 +33,12 @@ pub fn watchedCastError(found: &WatchedValue, target: &str) -> !
     throwable::throw(&CLASS_CAST, &format!("{name} cannot be cast to {target}"))
 }
 
-// playSoundAtEntity takes a sound name java may pass as null, the sound pool finds nothing for null or an empty name
 pub fn playSoundAtEntity(world: &World, entity: &Rc<Entity>, sound: Option<String>, volume: f32, pitch: f32)
 {
     world.playSoundAtEntity(entity, sound.as_deref().unwrap_or(""), volume, pitch);
+}
+
+pub fn classCast(from: &str, to: &str) -> !
+{
+    throwable::throw(&CLASS_CAST, &format!("net.minecraft.src.{from} cannot be cast to net.minecraft.src.{to}"))
 }

@@ -19,6 +19,7 @@ use lwjgl::util::glu::GLU;
 use std::path::PathBuf;
 use std::rc::{Rc, Weak};
 
+// the window title drops the Minecraft name at the user's request
 const WINDOW_TITLE: &str = "beta173";
 const CREATE_RETRY_DELAY: std::time::Duration = std::time::Duration::from_millis(1000);
 
@@ -44,7 +45,9 @@ impl Minecraft
         let this: Rc<Minecraft> = self.rc();
         if let Some(canvas) = self.m_mcCanvas.get()
         {
+            // the awt canvas is a stand-in so the black fill before attaching is skipped
             Display::setParent(Some(&*canvas))?;
+            // lwjgl sizes a parented display from the canvas peer which the stand-in lacks
             Display::setDisplayMode(DisplayMode::new(canvas.getWidth(), canvas.getHeight()))?;
         }
         else if self.m_fullscreen.get()
@@ -138,6 +141,7 @@ impl Minecraft
         Ok(())
     }
 
+    // the resource download runs on the game thread because it shares game objects
     fn startDownloadResources(&self, dataDir: &std::path::Path)
     {
         let _ = catchThrowable(&EXCEPTION, || {

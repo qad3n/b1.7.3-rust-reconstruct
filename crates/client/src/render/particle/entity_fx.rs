@@ -200,6 +200,7 @@ fn drawQuad(
     uv: [f32; 4],
 )
 {
+    // the game crate entity vtable passes the tessellator as Any so port downcasts it
     let tessellator: &Tessellator = crate::port::tessellator(target);
     let [u0, u1, v0, v1]: [f32; 4] = uv;
     let f4: f32 = 0.1 * fx(this).m_particleScale.get();
@@ -224,6 +225,7 @@ pub fn renderParticle(
     sideways: f32,
 )
 {
+    // the game crate entity vtable passes the tessellator as Any so port downcasts it
     let tessellator: &Tessellator = crate::port::tessellator(target);
     let fields: &FXFields = fx(this);
     let index: i32 = fields.m_particleTextureIndex.get();
@@ -251,6 +253,7 @@ pub fn renderJitteredParticle(
     sideways: f32,
 )
 {
+    // the game crate entity vtable passes the tessellator as Any so port downcasts it
     let tessellator: &Tessellator = crate::port::tessellator(target);
     let fields: &FXFields = fx(this);
     let index: i32 = fields.m_particleTextureIndex.get();

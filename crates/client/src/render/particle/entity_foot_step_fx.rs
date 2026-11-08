@@ -25,6 +25,7 @@ fn renderParticle(
     _sideways: f32,
 )
 {
+    // the game crate entity vtable passes the tessellator as Any so port downcasts it
     let tessellator: &Tessellator = crate::port::tessellator(target);
     let step: &FootStepFields = extra::<FootStepFields>(this);
     let mut f: f32 = (step.m_age.get() as f32 + tickDelta) / step.m_maxAge.get() as f32;

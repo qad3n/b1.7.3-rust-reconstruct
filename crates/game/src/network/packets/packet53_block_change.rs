@@ -1,7 +1,10 @@
 use crate::network::net_handler::NetHandler;
 use crate::network::packet::{self, Packet, PacketBase, PacketInput, PacketOutput};
+use crate::world::World;
 use jvm::io::IoResult;
+use std::rc::Rc;
 
+#[derive(Clone)]
 pub struct Packet53BlockChange
 {
     m_base: PacketBase,
@@ -23,6 +26,21 @@ impl Default for Packet53BlockChange
             m_zPosition: Default::default(),
             m_type: Default::default(),
             m_metadata: Default::default(),
+        }
+    }
+}
+
+impl Packet53BlockChange
+{
+    pub fn new(x: i32, y: i32, z: i32, world: &Rc<World>) -> Self
+    {
+        Self {
+            m_xPosition: x,
+            m_yPosition: y,
+            m_zPosition: z,
+            m_type: world.getBlockId(x, y, z),
+            m_metadata: world.getBlockMetadata(x, y, z),
+            ..Self::default()
         }
     }
 }

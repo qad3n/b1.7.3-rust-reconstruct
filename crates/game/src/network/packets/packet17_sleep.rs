@@ -1,8 +1,9 @@
+use crate::entity::Entity;
 use crate::network::net_handler::NetHandler;
 use crate::network::packet::{Packet, PacketBase, PacketInput, PacketOutput};
 use jvm::io::IoResult;
 
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub struct Packet17Sleep
 {
     m_base: PacketBase,
@@ -11,6 +12,14 @@ pub struct Packet17Sleep
     pub m_y: i32,
     pub m_z: i32,
     pub m_action: i32,
+}
+
+impl Packet17Sleep
+{
+    pub fn new(player: &Entity, action: i32, x: i32, y: i32, z: i32) -> Self
+    {
+        Self { m_action: action, m_x: x, m_y: y, m_z: z, m_id: player.m_entityId.get(), ..Self::default() }
+    }
 }
 
 impl Packet for Packet17Sleep

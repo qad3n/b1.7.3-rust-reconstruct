@@ -23,6 +23,7 @@ impl Minecraft
     {
         let flag: bool = false;
         let s: Option<String> = username;
+        // awt frame and canvas are stand-ins over the lwjgl window and the game runs on this thread
         let frame: Rc<Frame> = Rc::new(Frame);
         let canvas: Rc<Canvas> = Rc::new(Canvas::new(window::WIDTH, window::HEIGHT));
         let minecraft: Rc<Minecraft> = Minecraft::new(Some(canvas), None, window::WIDTH, window::HEIGHT, flag);

@@ -169,7 +169,7 @@ fn getCanSpawnHere(this: &Rc<Entity>) -> bool
 pub const CLASS: EntityClass = EntityClass {
     m_name: "EntitySlime",
     m_parent: Some(&entity_living::CLASS),
-    m_interfaces: &["IMob"],
+    m_interfaces: &["IMob", "IAnimals"],
     entityInit: |this| {
         (entity_living::CLASS.entityInit)(this);
         this.m_dataWatcher.addObject(16, WatchedValue::Byte(1));

@@ -70,6 +70,28 @@ pub fn setEntityDead(this: &Rc<World>, entity: &Rc<Entity>)
 
 impl World
 {
+    pub fn removePlayer(self: &Rc<Self>, entity: &Rc<Entity>)
+    {
+        let this: &Rc<World> = self;
+        entity.setEntityDead();
+        if isPlayer(entity)
+        {
+            this.m_playerEntities.remove(entity);
+            this.updateAllPlayersSleepingFlag();
+        }
+        let i: i32 = entity.m_chunkCoordX.get();
+        let j: i32 = entity.m_chunkCoordZ.get();
+        if entity.m_addedToChunk.get() && this.chunkExists(i, j)
+        {
+            this.getChunkFromChunkCoords(i, j).removeEntity(entity);
+        }
+        this.m_loadedEntityList.remove(entity);
+        this.releaseEntitySkin(entity);
+    }
+}
+
+impl World
+{
     pub fn playSoundAtEntity(&self, source: &Rc<Entity>, sound: &str, volume: f32, pitch: f32)
     {
         let mut i: i32 = 0;
@@ -118,12 +140,6 @@ impl World
     }
 
     pub fn getEntityOfSubtype(&self, _class: &str) -> Option<Rc<Entity>> { None }
-
-    pub fn addWeatherEffect(&self, entity: Rc<Entity>) -> bool
-    {
-        self.m_weatherEffects.add(entity);
-        true
-    }
 
     pub fn doEvent(&self, kind: i32, x: i32, y: i32, z: i32, data: i32) { self.doEventFrom(None, kind, x, y, z, data); }
 
@@ -328,95 +344,6 @@ impl World
 
     pub fn updateEntity(self: &Rc<Self>, entity: &Rc<Entity>) { self.updateEntityWithOptionalForce(entity, true); }
 
-    pub fn updateEntityWithOptionalForce(self: &Rc<Self>, entity: &Rc<Entity>, requireLoaded: bool)
-    {
-        let i: i32 = floor_double(entity.posX());
-        let j: i32 = floor_double(entity.posZ());
-        let b0: i32 = 32;
-        if requireLoaded && !self.checkChunksExist(i - b0, 0, j - b0, i + b0, 128, j + b0)
-        {
-            return;
-        }
-
-        entity.m_lastTickPosX.set(entity.posX());
-        entity.m_lastTickPosY.set(entity.posY());
-        entity.m_lastTickPosZ.set(entity.posZ());
-        entity.m_prevRotationYaw.set(entity.m_rotationYaw.get());
-        entity.m_prevRotationPitch.set(entity.m_rotationPitch.get());
-        if requireLoaded && entity.m_addedToChunk.get()
-        {
-            if entity.m_ridingEntity.with(Option::is_some)
-            {
-                entity.updateRidden();
-            }
-            else
-            {
-                entity.onUpdate();
-            }
-        }
-
-        if entity.posX().is_nan() || entity.posX().is_infinite()
-        {
-            entity.m_posX.set(entity.m_lastTickPosX.get());
-        }
-        if entity.posY().is_nan() || entity.posY().is_infinite()
-        {
-            entity.m_posY.set(entity.m_lastTickPosY.get());
-        }
-        if entity.posZ().is_nan() || entity.posZ().is_infinite()
-        {
-            entity.m_posZ.set(entity.m_lastTickPosZ.get());
-        }
-        if entity.m_rotationPitch.get().is_nan() || entity.m_rotationPitch.get().is_infinite()
-        {
-            entity.m_rotationPitch.set(entity.m_prevRotationPitch.get());
-        }
-        if entity.m_rotationYaw.get().is_nan() || entity.m_rotationYaw.get().is_infinite()
-        {
-            entity.m_rotationYaw.set(entity.m_prevRotationYaw.get());
-        }
-
-        let k: i32 = floor_double(entity.posX() / 16.0);
-        let l: i32 = floor_double(entity.posY() / 16.0);
-        let i1: i32 = floor_double(entity.posZ() / 16.0);
-        if !entity.m_addedToChunk.get()
-            || entity.m_chunkCoordX.get() != k
-            || entity.m_chunkCoordY.get() != l
-            || entity.m_chunkCoordZ.get() != i1
-        {
-            if entity.m_addedToChunk.get() && self.chunkExists(entity.m_chunkCoordX.get(), entity.m_chunkCoordZ.get())
-            {
-                self.getChunkFromChunkCoords(entity.m_chunkCoordX.get(), entity.m_chunkCoordZ.get())
-                    .removeEntityAtIndex(entity, entity.m_chunkCoordY.get());
-            }
-            if self.chunkExists(k, i1)
-            {
-                entity.m_addedToChunk.set(true);
-                self.getChunkFromChunkCoords(k, i1).addEntity(entity);
-            }
-            else
-            {
-                entity.m_addedToChunk.set(false);
-            }
-        }
-
-        if requireLoaded
-            && entity.m_addedToChunk.get()
-            && let Some(rider) = entity.m_riddenByEntity.get()
-        {
-            let riding: Option<Rc<Entity>> = rider.m_ridingEntity.get();
-            if !rider.m_isDead.get() && riding.as_ref().is_some_and(|riding| Rc::ptr_eq(riding, entity))
-            {
-                self.updateEntity(&rider);
-            }
-            else
-            {
-                rider.m_ridingEntity.set(None);
-                entity.m_riddenByEntity.set(None);
-            }
-        }
-    }
-
     pub fn checkIfAABBIsClear(&self, bounds: &AxisAlignedBB) -> bool
     {
         let list: Rc<JArrayList<Rc<Entity>>> = self.getEntitiesWithinAABBExcludingEntity(None, bounds);
@@ -618,23 +545,6 @@ impl World
         self.newExplosion(source, x, y, z, power, false)
     }
 
-    pub fn newExplosion(
-        self: &Rc<Self>,
-        source: Option<&Rc<Entity>>,
-        x: f64,
-        y: f64,
-        z: f64,
-        power: f32,
-        createFire: bool,
-    ) -> Rc<Explosion>
-    {
-        let explosion: Rc<Explosion> = Explosion::new(self, source, x, y, z, power);
-        explosion.m_isFlaming.set(createFire);
-        explosion.doExplosionA();
-        explosion.doExplosionB(true);
-        explosion
-    }
-
     pub fn getBlockDensity(self: &Rc<Self>, pos: &Vec3D, bounds: &AxisAlignedBB) -> f32
     {
         let d0: f64 = 1.0 / ((bounds.maxX() - bounds.minX()) * 2.0 + 1.0);
@@ -668,7 +578,7 @@ impl World
         i as f32 / j as f32
     }
 
-    pub fn onBlockHit(self: &Rc<Self>, player: &Rc<Entity>, x: i32, y: i32, z: i32, face: i32)
+    pub fn onBlockHit(self: &Rc<Self>, player: Option<&Rc<Entity>>, x: i32, y: i32, z: i32, face: i32)
     {
         let (mut x, mut y, mut z): (i32, i32, i32) = (x, y, z);
         match face
@@ -683,7 +593,7 @@ impl World
         }
         if self.getBlockId(x, y, z) == Block::fire().m_blockID
         {
-            self.doEventFrom(Some(player), 1004, x, y, z, 0);
+            self.doEventFrom(player, 1004, x, y, z, 0);
             self.setBlockWithNotify(x, y, z, 0);
         }
     }
@@ -924,7 +834,7 @@ impl World
         {
             if entityplayer.isPlayerSleeping()
             {
-                crate::entity::entity_player::wakeUpPlayer(&entityplayer, false, false, true);
+                entityplayer.wakeUpPlayer(false, false, true);
             }
         }
         self.stopPrecipitation();
@@ -945,4 +855,116 @@ impl World
         }
         false
     }
+}
+
+pub fn addWeatherEffect(this: &Rc<World>, entity: Rc<Entity>) -> bool
+{
+    this.m_weatherEffects.add(entity);
+    true
+}
+
+pub fn updateEntityWithOptionalForce(this: &Rc<World>, entity: &Rc<Entity>, requireLoaded: bool)
+{
+    let i: i32 = floor_double(entity.posX());
+    let j: i32 = floor_double(entity.posZ());
+    let b0: i32 = 32;
+    if requireLoaded && !this.checkChunksExist(i - b0, 0, j - b0, i + b0, 128, j + b0)
+    {
+        return;
+    }
+
+    entity.m_lastTickPosX.set(entity.posX());
+    entity.m_lastTickPosY.set(entity.posY());
+    entity.m_lastTickPosZ.set(entity.posZ());
+    entity.m_prevRotationYaw.set(entity.m_rotationYaw.get());
+    entity.m_prevRotationPitch.set(entity.m_rotationPitch.get());
+    if requireLoaded && entity.m_addedToChunk.get()
+    {
+        if entity.m_ridingEntity.with(Option::is_some)
+        {
+            entity.updateRidden();
+        }
+        else
+        {
+            entity.onUpdate();
+        }
+    }
+
+    if entity.posX().is_nan() || entity.posX().is_infinite()
+    {
+        entity.m_posX.set(entity.m_lastTickPosX.get());
+    }
+    if entity.posY().is_nan() || entity.posY().is_infinite()
+    {
+        entity.m_posY.set(entity.m_lastTickPosY.get());
+    }
+    if entity.posZ().is_nan() || entity.posZ().is_infinite()
+    {
+        entity.m_posZ.set(entity.m_lastTickPosZ.get());
+    }
+    if entity.m_rotationPitch.get().is_nan() || entity.m_rotationPitch.get().is_infinite()
+    {
+        entity.m_rotationPitch.set(entity.m_prevRotationPitch.get());
+    }
+    if entity.m_rotationYaw.get().is_nan() || entity.m_rotationYaw.get().is_infinite()
+    {
+        entity.m_rotationYaw.set(entity.m_prevRotationYaw.get());
+    }
+
+    let k: i32 = floor_double(entity.posX() / 16.0);
+    let l: i32 = floor_double(entity.posY() / 16.0);
+    let i1: i32 = floor_double(entity.posZ() / 16.0);
+    if !entity.m_addedToChunk.get()
+        || entity.m_chunkCoordX.get() != k
+        || entity.m_chunkCoordY.get() != l
+        || entity.m_chunkCoordZ.get() != i1
+    {
+        if entity.m_addedToChunk.get() && this.chunkExists(entity.m_chunkCoordX.get(), entity.m_chunkCoordZ.get())
+        {
+            this.getChunkFromChunkCoords(entity.m_chunkCoordX.get(), entity.m_chunkCoordZ.get())
+                .removeEntityAtIndex(entity, entity.m_chunkCoordY.get());
+        }
+        if this.chunkExists(k, i1)
+        {
+            entity.m_addedToChunk.set(true);
+            this.getChunkFromChunkCoords(k, i1).addEntity(entity);
+        }
+        else
+        {
+            entity.m_addedToChunk.set(false);
+        }
+    }
+
+    if requireLoaded
+        && entity.m_addedToChunk.get()
+        && let Some(rider) = entity.m_riddenByEntity.get()
+    {
+        let riding: Option<Rc<Entity>> = rider.m_ridingEntity.get();
+        if !rider.m_isDead.get() && riding.as_ref().is_some_and(|riding| Rc::ptr_eq(riding, entity))
+        {
+            this.updateEntity(&rider);
+        }
+        else
+        {
+            rider.m_ridingEntity.set(None);
+            entity.m_riddenByEntity.set(None);
+        }
+    }
+}
+
+pub fn newExplosion(
+    this: &Rc<World>,
+    source: Option<&Rc<Entity>>,
+    x: f64,
+    y: f64,
+    z: f64,
+    power: f32,
+    createFire: bool,
+) -> Rc<Explosion>
+{
+    let explosion: Rc<Explosion> = Explosion::new(this, source, x, y, z, power);
+    explosion.m_isFlaming.set(createFire);
+    explosion.doExplosionA();
+    explosion.doExplosionB(true);
+    explosion
 }
