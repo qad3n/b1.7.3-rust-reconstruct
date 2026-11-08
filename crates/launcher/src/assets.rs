@@ -1,303 +1,200 @@
+use anyhow::{Context, Result};
 use serde_json::Value;
-use std::io::{Cursor, Read};
+use std::fs::File;
+use std::io::{Cursor, Write};
 use std::path::{Path, PathBuf};
+use std::sync::LazyLock;
 
 const CLIENT_JAR_ENV: &str = "B173_CLIENT_JAR";
 const SOUNDS_DIR_ENV: &str = "B173_SOUNDS_DIR";
-const LAUNCHER_JAR: &str = ".minecraft/versions/b1.7.3/b1.7.3.jar";
-const VERSION_MANIFEST_URL: &str = "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json";
+const LAUNCHER_JAR: &str = "versions/b1.7.3/b1.7.3.jar";
 const VERSION_ID: &str = "b1.7.3";
 const CLIENT_JAR_SHA1: &str = "43db9b498cb67058d2e12d394e6507722e71bb45";
-const CLIENT_JAR_SIZE: u64 = 1465375;
-const RESOURCES_URL: &str = "https://resources.download.minecraft.net";
-const MCASSET_URL: &str = "https://mcasset.cloud/b1.7.3/assets";
+
+mod url
+{
+    pub const VERSION_MANIFEST: &str = "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json";
+    pub const RESOURCES: &str = "https://resources.download.minecraft.net";
+    pub const MCASSET: &str = "https://mcasset.cloud/b1.7.3/assets";
+}
 
 const CLIENT_STAMP: &str = ".client-jar.sha1";
 const SOUNDS_STAMP: &str = ".sounds-installed";
 
-const SOUND_PREFIXES: &[&str] = &["sound/", "newsound/", "music/", "newmusic/", "streaming/"];
+const SOUND_FOLDERS: &[&str] = &["sound", "newsound", "music", "newmusic", "streaming"];
 
-#[derive(Debug, thiserror::Error)]
-pub enum FetchError
-{
-    #[error("i/o on {path}")]
-    Io
-    {
-        path: PathBuf, source: std::io::Error
-    },
-    #[error("download of {url} failed: {message}")]
-    Download
-    {
-        url: String, message: String
-    },
-    #[error("unexpected metadata from {url}: {message}")]
-    Metadata
-    {
-        url: String, message: String
-    },
-    #[error("sha1 mismatch for {what}: expected {expected}, got {actual}")]
-    Sha1
-    {
-        what: String, expected: String, actual: String
-    },
-    #[error("size mismatch for {what}: expected {expected}, got {actual}")]
-    Size
-    {
-        what: String, expected: u64, actual: u64
-    },
-    #[error("client jar {path}: {message}")]
-    Zip
-    {
-        path: String, message: String
-    },
-}
+// one agent keeps connections alive across the sound downloads
+static AGENT: LazyLock<ureq::Agent> = LazyLock::new(ureq::Agent::new_with_defaults);
 
-struct Remote
+pub fn install(root: &Path, gameDir: &Path, clientJar: Option<PathBuf>) -> Result<()>
 {
-    m_url: String,
-    m_sha1: String,
-    m_size: u64,
-}
-
-fn clientInstalled(root: &Path) -> bool
-{
-    std::fs::read_to_string(root.join(CLIENT_STAMP)).is_ok_and(|stamp| stamp.trim() == CLIENT_JAR_SHA1)
-}
-
-fn soundsInstalled(root: &Path, resources: &Path) -> bool
-{
-    std::fs::read_to_string(root.join(SOUNDS_STAMP)).is_ok_and(|stamp| Path::new(&stamp) == resources)
-}
-
-pub fn install(root: &Path, resources: &Path, clientJar: Option<PathBuf>) -> Result<(), FetchError>
-{
-    if !clientInstalled(root)
+    let resources: PathBuf = gameDir.join("resources");
+    if !stampMatches(&root.join(CLIENT_STAMP), CLIENT_JAR_SHA1)
     {
-        fetchClient(root, clientJar)?;
+        fetchClient(root, clientJar.or_else(|| localJar(gameDir)))?;
     }
-    if !soundsInstalled(root, resources)
+    let soundsStamp: PathBuf = root.join(SOUNDS_STAMP);
+    if !stampMatches(&soundsStamp, &resources.to_string_lossy())
     {
-        match localSounds()
+        match std::env::var_os(SOUNDS_DIR_ENV).map(PathBuf::from).filter(|folder| folder.is_dir())
         {
-            Some(folder) => copySounds(resources, &folder)?,
-            None => fetchSounds(resources)?,
+            Some(folder) => copySounds(&resources, &folder)?,
+            None => fetchSounds(&resources)?,
         }
-        write(&root.join(SOUNDS_STAMP), resources.to_string_lossy().as_bytes())?;
+        write(&soundsStamp, resources.to_string_lossy().as_bytes())?;
     }
     Ok(())
 }
 
-fn localSounds() -> Option<PathBuf>
+fn stampMatches(stamp: &Path, expected: &str) -> bool
 {
-    let folder: PathBuf = PathBuf::from(std::env::var_os(SOUNDS_DIR_ENV)?);
-    folder.is_dir().then_some(folder)
+    std::fs::read_to_string(stamp).is_ok_and(|text| text.trim() == expected)
 }
 
-fn copySounds(resources: &Path, source: &Path) -> Result<(), FetchError>
+fn localJar(gameDir: &Path) -> Option<PathBuf>
+{
+    std::env::var_os(CLIENT_JAR_ENV)
+        .map(PathBuf::from)
+        .or_else(|| Some(gameDir.join(LAUNCHER_JAR)).filter(|jar| jar.is_file()))
+}
+
+fn isSound(name: &str) -> bool { name.split_once('/').is_some_and(|(folder, _)| SOUND_FOLDERS.contains(&folder)) }
+
+fn copySounds(resources: &Path, source: &Path) -> Result<()>
 {
     eprintln!("beta173_launcher: copying sounds from {} into {}", source.display(), resources.display());
-    for prefix in SOUND_PREFIXES
+    for folder in SOUND_FOLDERS
     {
-        let folder: PathBuf = source.join(prefix.trim_end_matches('/'));
-        if folder.is_dir()
+        let from: PathBuf = source.join(folder);
+        if from.is_dir()
         {
-            copyTree(&folder, &resources.join(prefix.trim_end_matches('/')))?;
+            copyTree(&from, &resources.join(folder))?;
         }
     }
     Ok(())
 }
 
-fn copyTree(from: &Path, to: &Path) -> Result<(), FetchError>
+fn copyTree(from: &Path, to: &Path) -> Result<()>
 {
-    let entries: std::fs::ReadDir =
-        std::fs::read_dir(from).map_err(|source| FetchError::Io { path: from.to_path_buf(), source })?;
-    for entry in entries
+    std::fs::create_dir_all(to).with_context(|| format!("creating {}", to.display()))?;
+    for entry in std::fs::read_dir(from).with_context(|| format!("reading {}", from.display()))?
     {
-        let entry: std::fs::DirEntry = entry.map_err(|source| FetchError::Io { path: from.to_path_buf(), source })?;
-        let path: PathBuf = entry.path();
-        let destination: PathBuf = to.join(entry.file_name());
+        let path: PathBuf = entry.with_context(|| format!("reading {}", from.display()))?.path();
+        let destination: PathBuf = to.join(path.file_name().context("directory entry has no name")?);
         if path.is_dir()
         {
             copyTree(&path, &destination)?;
         }
         else
         {
-            let bytes: Vec<u8> =
-                std::fs::read(&path).map_err(|source| FetchError::Io { path: path.clone(), source })?;
-            write(&destination, &bytes)?;
+            std::fs::copy(&path, &destination)
+                .with_context(|| format!("copying {} to {}", path.display(), destination.display()))?;
         }
     }
     Ok(())
 }
 
-fn localJar(clientJar: Option<PathBuf>) -> Option<PathBuf>
+fn fetchClient(root: &Path, jar: Option<PathBuf>) -> Result<()>
 {
-    if let Some(path) = clientJar.or_else(|| std::env::var_os(CLIENT_JAR_ENV).map(PathBuf::from))
-    {
-        return Some(path);
-    }
-    let launcherJar: PathBuf = PathBuf::from(std::env::var_os("HOME")?).join(LAUNCHER_JAR);
-    launcherJar.is_file().then_some(launcherJar)
-}
-
-fn fetchClient(root: &Path, clientJar: Option<PathBuf>) -> Result<(), FetchError>
-{
-    let (name, bytes): (String, Vec<u8>) = match localJar(clientJar)
+    let bytes: Vec<u8> = match jar
     {
         Some(path) =>
         {
             eprintln!("beta173_launcher: extracting assets from {}", path.display());
-            let bytes: Vec<u8> =
-                std::fs::read(&path).map_err(|source| FetchError::Io { path: path.clone(), source })?;
-            (path.display().to_string(), bytes)
+            std::fs::read(&path).with_context(|| format!("reading {}", path.display()))?
         }
         None =>
         {
             eprintln!("beta173_launcher: no local client jar, downloading the {VERSION_ID} client from Mojang");
-            match downloadClientJar()
-            {
-                Ok(bytes) => (format!("{VERSION_ID} client jar"), bytes),
-                Err(error) =>
-                {
-                    eprintln!(
-                        "beta173_launcher: copy the files of {MCASSET_URL} into {} to install the assets by hand",
-                        root.display()
-                    );
-                    return Err(error);
-                }
-            }
+            downloadClientJar().with_context(|| {
+                format!("copy the files of {} into {} to install the assets by hand", url::MCASSET, root.display())
+            })?
         }
     };
-    verify(&name, &bytes, CLIENT_JAR_SHA1, CLIENT_JAR_SIZE)?;
-    extractJar(root, &name, &bytes)?;
+    verify("client jar", &bytes, CLIENT_JAR_SHA1)?;
+    extractJar(root, &bytes)?;
     write(&root.join(CLIENT_STAMP), CLIENT_JAR_SHA1.as_bytes())
 }
 
-fn downloadClientJar() -> Result<Vec<u8>, FetchError>
-{
-    let version: Value = versionJson()?;
-    let client: Remote = remote(&version, "/downloads/client", "url")?;
-    if client.m_sha1 != CLIENT_JAR_SHA1
-    {
-        return Err(FetchError::Sha1 {
-            what: "the version json client entry".to_owned(),
-            expected: CLIENT_JAR_SHA1.to_owned(),
-            actual: client.m_sha1,
-        });
-    }
-    download(&client.m_url)
-}
+fn downloadClientJar() -> Result<Vec<u8>> { download(text(&versionJson()?, "/downloads/client/url")?) }
 
-fn fetchSounds(resources: &Path) -> Result<(), FetchError>
+fn fetchSounds(resources: &Path) -> Result<()>
 {
     let version: Value = versionJson()?;
-    let indexEntry: Remote = remote(&version, "/assetIndex", "url")?;
-    let indexBytes: Vec<u8> = download(&indexEntry.m_url)?;
-    verify(&indexEntry.m_url, &indexBytes, &indexEntry.m_sha1, indexEntry.m_size)?;
-    let index: Value = parseJson(&indexEntry.m_url, &indexBytes)?;
-    let objects: &serde_json::Map<String, Value> = index
-        .get("objects")
-        .and_then(Value::as_object)
-        .ok_or_else(|| FetchError::Metadata { url: indexEntry.m_url.clone(), message: "no objects map".to_owned() })?;
-    let wanted: Vec<(&String, &Value)> =
-        objects.iter().filter(|(name, _)| SOUND_PREFIXES.iter().any(|prefix| name.starts_with(prefix))).collect();
+    let indexUrl: &str = text(&version, "/assetIndex/url")?;
+    let indexBytes: Vec<u8> = download(indexUrl)?;
+    verify(indexUrl, &indexBytes, text(&version, "/assetIndex/sha1")?)?;
+    let index: Value = parseJson(indexUrl, &indexBytes)?;
+    let objects: &serde_json::Map<String, Value> =
+        index.get("objects").and_then(Value::as_object).with_context(|| format!("{indexUrl} has no objects map"))?;
+    let wanted: Vec<(&String, &Value)> = objects.iter().filter(|(name, _)| isSound(name)).collect();
     eprintln!("beta173_launcher: downloading {} sound files into {}", wanted.len(), resources.display());
     for (name, object) in wanted
     {
-        let hash: String = stringField(&indexEntry.m_url, object, "hash")?;
-        let size: u64 = object.get("size").and_then(Value::as_u64).unwrap_or(0);
-        let folder: &str = hash.get(..2).ok_or_else(|| FetchError::Metadata {
-            url: indexEntry.m_url.clone(),
-            message: format!("short hash for {name}"),
-        })?;
+        let hash: &str = text(object, "/hash")?;
         let destination: PathBuf = resources.join(name);
-        if std::fs::read(&destination).is_ok_and(|bytes| verify(name, &bytes, &hash, size).is_ok())
+        if std::fs::read(&destination).is_ok_and(|bytes| verify(name, &bytes, hash).is_ok())
         {
             continue;
         }
-        let url: String = format!("{RESOURCES_URL}/{folder}/{hash}");
-        let bytes: Vec<u8> = download(&url)?;
-        verify(name, &bytes, &hash, size)?;
+        let folder: &str = hash.get(..2).with_context(|| format!("short hash for {name}"))?;
+        let bytes: Vec<u8> = download(&format!("{}/{folder}/{hash}", url::RESOURCES))?;
+        verify(name, &bytes, hash)?;
         write(&destination, &bytes)?;
     }
     Ok(())
 }
 
-fn versionJson() -> Result<Value, FetchError>
+fn versionJson() -> Result<Value>
 {
-    let manifest: Value = parseJson(VERSION_MANIFEST_URL, &download(VERSION_MANIFEST_URL)?)?;
+    let manifest: Value = parseJson(url::VERSION_MANIFEST, &download(url::VERSION_MANIFEST)?)?;
     let entry: &Value = manifest
         .get("versions")
         .and_then(Value::as_array)
         .and_then(|versions| {
             versions.iter().find(|version| version.get("id").and_then(Value::as_str) == Some(VERSION_ID))
         })
-        .ok_or_else(|| FetchError::Metadata {
-            url: VERSION_MANIFEST_URL.to_owned(),
-            message: format!("no {VERSION_ID} entry"),
-        })?;
-    let url: String = stringField(VERSION_MANIFEST_URL, entry, "url")?;
-    let bytes: Vec<u8> = download(&url)?;
-    let sha1: String = stringField(VERSION_MANIFEST_URL, entry, "sha1")?;
-    verify(&url, &bytes, &sha1, 0)?;
-    parseJson(&url, &bytes)
+        .with_context(|| format!("{} has no {VERSION_ID} entry", url::VERSION_MANIFEST))?;
+    let url: &str = text(entry, "/url")?;
+    let bytes: Vec<u8> = download(url)?;
+    verify(url, &bytes, text(entry, "/sha1")?)?;
+    parseJson(url, &bytes)
 }
 
-fn remote(json: &Value, pointer: &str, urlKey: &str) -> Result<Remote, FetchError>
+fn text<'a>(json: &'a Value, pointer: &str) -> Result<&'a str>
 {
-    let entry: &Value = json
-        .pointer(pointer)
-        .ok_or_else(|| FetchError::Metadata { url: VERSION_ID.to_owned(), message: format!("missing {pointer}") })?;
-    Ok(Remote {
-        m_url: stringField(VERSION_ID, entry, urlKey)?,
-        m_sha1: stringField(VERSION_ID, entry, "sha1")?,
-        m_size: entry.get("size").and_then(Value::as_u64).unwrap_or(0),
-    })
+    json.pointer(pointer).and_then(Value::as_str).with_context(|| format!("metadata has no {pointer}"))
 }
 
-fn stringField(source: &str, json: &Value, key: &str) -> Result<String, FetchError>
+fn parseJson(url: &str, bytes: &[u8]) -> Result<Value>
 {
-    json.get(key)
-        .and_then(Value::as_str)
-        .map(str::to_owned)
-        .ok_or_else(|| FetchError::Metadata { url: source.to_owned(), message: format!("missing {key}") })
+    serde_json::from_slice(bytes).with_context(|| format!("parsing {url}"))
 }
 
-fn parseJson(url: &str, bytes: &[u8]) -> Result<Value, FetchError>
+fn download(url: &str) -> Result<Vec<u8>>
 {
-    serde_json::from_slice(bytes)
-        .map_err(|error| FetchError::Metadata { url: url.to_owned(), message: error.to_string() })
+    AGENT
+        .get(url)
+        .call()
+        .and_then(|mut response| response.body_mut().with_config().limit(u64::MAX).read_to_vec())
+        .with_context(|| format!("downloading {url}"))
 }
 
-fn download(url: &str) -> Result<Vec<u8>, FetchError>
+fn verify(what: &str, bytes: &[u8], sha1: &str) -> Result<()>
 {
-    let failed = |message: String| FetchError::Download { url: url.to_owned(), message };
-    let mut response: ureq::http::Response<ureq::Body> =
-        ureq::get(url).call().map_err(|error| failed(error.to_string()))?;
-    response.body_mut().with_config().limit(u64::MAX).read_to_vec().map_err(|error| failed(error.to_string()))
-}
-
-fn verify(what: &str, bytes: &[u8], sha1: &str, size: u64) -> Result<(), FetchError>
-{
-    if size != 0 && bytes.len() as u64 != size
-    {
-        return Err(FetchError::Size { what: what.to_owned(), expected: size, actual: bytes.len() as u64 });
-    }
     let actual: String = sha1_smol::Sha1::from(bytes).digest().to_string();
-    if !actual.eq_ignore_ascii_case(sha1)
-    {
-        return Err(FetchError::Sha1 { what: what.to_owned(), expected: sha1.to_owned(), actual });
-    }
+    anyhow::ensure!(actual.eq_ignore_ascii_case(sha1), "sha1 mismatch for {what}: expected {sha1}, got {actual}");
     Ok(())
 }
 
-fn extractJar(root: &Path, name: &str, bytes: &[u8]) -> Result<(), FetchError>
+fn extractJar(root: &Path, bytes: &[u8]) -> Result<()>
 {
-    let zipError = |error: zip::result::ZipError| FetchError::Zip { path: name.to_owned(), message: error.to_string() };
-    let mut archive: zip::ZipArchive<Cursor<&[u8]>> = zip::ZipArchive::new(Cursor::new(bytes)).map_err(zipError)?;
+    let mut archive: zip::ZipArchive<Cursor<&[u8]>> =
+        zip::ZipArchive::new(Cursor::new(bytes)).context("opening the client jar")?;
     for index in 0..archive.len()
     {
-        let mut entry: zip::read::ZipFile<'_, Cursor<&[u8]>> = archive.by_index(index).map_err(zipError)?;
+        let mut entry: zip::read::ZipFile<'_, Cursor<&[u8]>> =
+            archive.by_index(index).context("reading the client jar")?;
         let Some(relative) = entry.enclosed_name()
         else
         {
@@ -307,19 +204,23 @@ fn extractJar(root: &Path, name: &str, bytes: &[u8]) -> Result<(), FetchError>
         {
             continue;
         }
-        let mut contents: Vec<u8> = Vec::new();
-        entry.read_to_end(&mut contents).map_err(|source| FetchError::Io { path: relative.clone(), source })?;
-        write(&root.join(&relative), &contents)?;
+        let path: PathBuf = root.join(&relative);
+        std::io::copy(&mut entry, &mut create(&path)?).with_context(|| format!("extracting {}", path.display()))?;
     }
     eprintln!("beta173_launcher: assets extracted into {}", root.display());
     Ok(())
 }
 
-fn write(path: &Path, bytes: &[u8]) -> Result<(), FetchError>
+fn create(path: &Path) -> Result<File>
 {
     if let Some(parent) = path.parent()
     {
-        std::fs::create_dir_all(parent).map_err(|source| FetchError::Io { path: parent.to_owned(), source })?;
+        std::fs::create_dir_all(parent).with_context(|| format!("creating {}", parent.display()))?;
     }
-    std::fs::write(path, bytes).map_err(|source| FetchError::Io { path: path.to_owned(), source })
+    File::create(path).with_context(|| format!("creating {}", path.display()))
+}
+
+fn write(path: &Path, bytes: &[u8]) -> Result<()>
+{
+    create(path)?.write_all(bytes).with_context(|| format!("writing {}", path.display()))
 }

@@ -45,7 +45,7 @@ fn run() -> Result<ExitCode>
     let dataDir: PathBuf = dataDir()?;
     let name: String = askName(&dataDir)?;
     let root: PathBuf = assetRoot(&dataDir);
-    assets::install(&root, &gameDir()?.join("resources"), options.m_clientJar)?;
+    assets::install(&root, &gameDir()?, options.m_clientJar)?;
     let game: PathBuf = match options.m_game
     {
         Some(path) => path,
