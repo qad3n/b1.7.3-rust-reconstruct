@@ -9,7 +9,7 @@ fn golden(name: &str) -> String
     let dir: PathBuf = match std::env::var("B173_GOLDEN")
     {
         Ok(path) => PathBuf::from(path),
-        Err(_) => PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../tools/rewrite/golden"),
+        Err(_) => PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../tools/reconstruct/golden"),
     };
     let path: PathBuf = dir.join(name);
     std::fs::read_to_string(&path).unwrap_or_else(|error| panic!("golden file {} unreadable: {error}", path.display()))
